@@ -239,23 +239,23 @@ class MessageProcessor(nn.Module):
             agent_identity = agent_identity.cuda()
         # debuglogger.info(f'Agent identifier: {agent_identity}')
         # debuglogger.info(f'Message: {message}')
-        message = torch.cat([agent_identity, message.data], dim=1)
-        # debuglogger.info(f'Combined shape: {message.shape}')
-        # debuglogger.info(f'Combined: {message}')
-        message = _Variable(message)
-        return message
+        new_message = torch.cat([agent_identity, message.data], dim=1)
+        # debuglogger.info(f'Combined shape: {new_message.shape}')
+        # debuglogger.info(f'Combined: {new_message}')
+        new_message = _Variable(new_message)
+        return new_message
 
     def forward(self, m, h, use_message, m_identifier):
-        if self.identify_agents:
-            m = self.concat_identifier(m, m_identifier)
         if use_message:
             debuglogger.debug(f'Using message')
+            if self.identify_agents:
+                m = self.concat_identifier(m, m_identifier)
             return self.rnn(m, h)
         else:
             debuglogger.debug(f'Ignoring message, using blank instead...')
             blank_msg = _Variable(torch.zeros_like(m.data))
             if self.identify_agents:
-                blank_msg = concat_identifier(blank_msg, m_identifier)
+                blank_msg = self.concat_identifier(blank_msg, m_identifier)
             if self.use_cuda:
                 blank_msg = blank_msg.cuda()
             return self.rnn(blank_msg, h)

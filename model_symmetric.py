@@ -1309,8 +1309,8 @@ def exchange(a1, a2, exchange_args):
         agent_idxs[1] = _a_idxs[1]
         who_goes_first = 1
         debuglogger.debug(f'Agent 1 communicates first')
-    debuglogger.info(f'Original agent indices: {_a_idxs}')
-    debuglogger.info(f'Agent indices adjusted for comms order: {agent_idxs}')
+    debuglogger.debug(f'Original agent indices: {_a_idxs}')
+    debuglogger.debug(f'Agent indices adjusted for comms order: {agent_idxs}')
 
     data = exchange_args["data"]
     # TODO extend implementation to include data context
@@ -1366,7 +1366,7 @@ def exchange(a1, a2, exchange_args):
         debuglogger.warning(f'Data context not supported currently')
         sys.exit()
     else:
-        debuglogger.info(f'Inside exchange: Train status: {train}, Message: {m_binary}')
+        # debuglogger.info(f'Inside exchange: Train status: {train}, Message: {m_binary}')
         s_1e, m_1e, y_1e, r_1e = agent1(
             data['im_feats_1'],
             m_binary,
@@ -1440,7 +1440,7 @@ def exchange(a1, a2, exchange_args):
             debuglogger.warning(f'Data context not supported currently')
             sys.exit()
         else:
-            debuglogger.info(f'Inside exchange: Train status: {train}, Message to agent 2: {m_1e_binary}, other agent idx: {agent_idxs[0]}')
+            # debuglogger.info(f'Inside exchange: Train status: {train}, Message to agent 2: {m_1e_binary}, other agent idx: {agent_idxs[0]}')
             s_2e, m_2e, y_2e, r_2e = agent2(
                 data['im_feats_2'],
                 m_1e_binary,
@@ -1449,7 +1449,7 @@ def exchange(a1, a2, exchange_args):
                 use_message,
                 batch_size,
                 train,
-                agent_idxs[0])  # Agent 1 identifier
+                agent_idxs[0] - 1)  # Agent 1 identifier
 
         # Agent 2's message
         m_2e_binary, m_2e_probs = m_2e
@@ -1492,7 +1492,7 @@ def exchange(a1, a2, exchange_args):
                 use_message,
                 batch_size,
                 train,
-                agent_idxs[1])  # Agent 2 identifier
+                agent_idxs[1] - 1)  # Agent 2 identifier
 
         # Store rest of communication and stop information
         s_binary_1, s_prob_1 = s_1e
