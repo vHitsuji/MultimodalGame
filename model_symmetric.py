@@ -2498,7 +2498,7 @@ def run():
 
                 # Report out of domain development accuracy
                 dev_accuracy_ood, total_accuracy_com = get_and_log_dev_performance(
-                    agent1, agent2, FLAGS.dataset_path, False, dev_accuracy_ood, logger, flogger, f'Out of Domain:', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag="no_tag", agent_idxs=agent_idxs)
+                    agent1, agent2, FLAGS.dataset_outdomain_valid_path, True, dev_accuracy_ood, logger, flogger, "Out of Domain", epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag="no_tag", agent_idxs=agent_idxs)
 
             # Report in domain development accuracy when training agent communities
             if FLAGS.agent_communities and step % FLAGS.log_community_eval == 0:
