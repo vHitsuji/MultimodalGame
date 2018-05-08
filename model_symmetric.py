@@ -585,8 +585,8 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                              'add': {'name': exchange_args["add"], 'total': 0, 'correct': 0},
                                              'own_correct': 0,
                                              'originally_correct': 0,
-                                             'correct_permuations': 0,
-                                             'total_permuations': 0,
+                                             'correct_permutations': 0,
+                                             'total_permutations': 0,
                                              'total_own_codes': 0}
                             for _g1 in range(len(agent_codes_1)):
                                 for _g2 in range(len(agent_codes_2)):
@@ -617,11 +617,11 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                     # We only care about after communication predictions when measuring the peformance
                                     score = None
                                     new_target = torch.zeros(1).fill_(_t).long()
-                                    debuglogger.info(f'Old target: {target[_]}')
+                                    debuglogger.debug(f'Old target: {target[_]}')
                                     na, argmax_y1 = torch.max(y[0][-1], 1)
                                     na, argmax_y2 = torch.max(y[1][-1], 1)
                                     debuglogger.debug(f'y1 logits: {y[0][-1].data}, y2 logits: {y[1][-1].data}')
-                                    debuglogger.info(f'y1: {argmax_y1.data[0]}, y2: {argmax_y2.data[0]}, new_target: {new_target[0]}')
+                                    debuglogger.debug(f'y1: {argmax_y1.data[0]}, y2: {argmax_y2.data[0]}, new_target: {new_target[0]}')
                                     if FLAGS.cuda:
                                         new_target = new_target.cuda()
                                     if change_agent == 1:
@@ -638,7 +638,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                         na, na, top_1_1_change = calculate_accuracy(
                                             dist_1_change, new_target, 1, FLAGS.top_k_dev)
                                         score = top_1_1_change
-                                    debuglogger.info(f'i: {_}_{_t}: New caption: {t}, new target: {_t}, change_agent: {change_agent}, correct: {score[0]}, originally correct: {correct_1[_]}/{correct_2[_]}')
+                                    debuglogger.debug(f'i: {_}_{_t}: New caption: {t}, new target: {_t}, change_agent: {change_agent}, correct: {score[0]}, originally correct: {correct_1[_]}/{correct_2[_]}')
 
                                     # Store results
                                     test_language_similarity["total"] += 1
@@ -664,7 +664,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                         test_language_similarity["color"].append(None)
 
                                     # Track detailed results
-                                    example_stats['total_permuations'] += 1
+                                    example_stats['total_permutations'] += 1
                                     example_stats['subtract']["total"] += 1
                                     example_stats['add']["total"] += 1
                                     if score[0] == 1:
@@ -699,11 +699,11 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                     # We only care about after communication predictions when measuring the peformance
                                     score = None
                                     new_target = torch.zeros(1).fill_(_t).long()
-                                    debuglogger.info(f'Old target: {target[_]}')
+                                    debuglogger.debug(f'Old target: {target[_]}')
                                     na, argmax_y1 = torch.max(y[0][-1], 1)
                                     na, argmax_y2 = torch.max(y[1][-1], 1)
                                     debuglogger.debug(f'y1 logits: {y[0][-1].data}, y2 logits: {y[1][-1].data}')
-                                    debuglogger.info(f'y1: {argmax_y1.data[0]}, y2: {argmax_y2.data[0]}, new_target: {new_target[0]}')
+                                    debuglogger.debug(f'y1: {argmax_y1.data[0]}, y2: {argmax_y2.data[0]}, new_target: {new_target[0]}')
                                     if FLAGS.cuda:
                                         new_target = new_target.cuda()
                                     if change_agent == 1:
@@ -720,7 +720,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                         na, na, top_1_1_change = calculate_accuracy(
                                             dist_1_change, new_target, 1, FLAGS.top_k_dev)
                                         score = top_1_1_change
-                                    debuglogger.info(f'i: {_}_{_t}: New caption: {t}, new target: {_t}, change_agent: {change_agent}, correct: {score[0]}, originally correct: {correct_1[_]}/{correct_2[_]}')
+                                    debuglogger.debug(f'i: {_}_{_t}: New caption: {t}, new target: {_t}, change_agent: {change_agent}, correct: {score[0]}, originally correct: {correct_1[_]}/{correct_2[_]}')
 
                                     # Store results
                                     test_language_similarity["total"] += 1
@@ -746,7 +746,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                         test_language_similarity["color"].append(None)
 
                                     # Track detailed results
-                                    example_stats['total_permuations'] += 1
+                                    example_stats['total_permutations'] += 1
                                     example_stats['subtract']["total"] += 1
                                     example_stats['add']["total"] += 1
                                     if score[0] == 1:
@@ -773,57 +773,69 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
     aggregate_stats = {}
     detail_total = 0
     detail_orig_correct = 0
+    detail_total_permutes_not_filtered = 0
+    detail_own_total_total = 0
     detail_own_total = 0
     detail_own_correct = 0
     permutes_total = 0
     permutes_correct = 0
     for elem in detail_language_similarity:
         detail_total += 1
+        detail_total_permutes_not_filtered += elem['total_permutations']
+        detail_own_total_total += elem['total_own_codes']
         if elem["originally_correct"]:
             detail_orig_correct += 1
             detail_own_total += elem['total_own_codes']
-            if elem['own_correct'] > 0:
-                detail_own_correct += elem['own_total']
+            if elem['total_own_codes'] != 2:
+                debuglogger.warn(f'Error: {elem["total_own_codes"]} own codes instead of 2')
+                sys.exit()
+            if elem['own_correct'] == 2:
+                detail_own_correct += elem['own_correct']
                 permutes_total += elem['total_permutations']
                 permutes_correct += elem['correct_permutations']
                 if elem['subtract']['name'] not in aggregate_stats:
                     aggregate_stats[elem['subtract']['name']] = {'total': 0, 'correct': 0, 'own_correct': 0, 'own_total': 0}
-                    aggregate_stats[elem['subtract']['name']]['total'] += elem['subtract']['total']
-                    aggregate_stats[elem['subtract']['name']]['correct'] += elem['subtract']['correct']
-                    aggregate_stats[elem['subtract']['name']]['own_total'] += elem['total_own_codes']
-                    aggregate_stats[elem['subtract']['name']]['own_correct'] += elem['own_correct']
+                aggregate_stats[elem['subtract']['name']]['total'] += elem['subtract']['total']
+                aggregate_stats[elem['subtract']['name']]['correct'] += elem['subtract']['correct']
+                aggregate_stats[elem['subtract']['name']]['own_total'] += elem['total_own_codes']
+                aggregate_stats[elem['subtract']['name']]['own_correct'] += elem['own_correct']
                 if elem['add']['name'] not in aggregate_stats:
                     aggregate_stats[elem['add']['name']] = {'total': 0, 'correct': 0, 'own_correct': 0, 'own_total': 0}
-                    aggregate_stats[elem['add']['name']]['total'] += elem['add']['total']
-                    aggregate_stats[elem['add']['name']]['correct'] += elem['add']['correct']
-                    aggregate_stats[elem['add']['name']]['own_total'] += elem['total_own_codes']
-                    aggregate_stats[elem['add']['name']]['own_correct'] += elem['own_correct']
+                aggregate_stats[elem['add']['name']]['total'] += elem['add']['total']
+                aggregate_stats[elem['add']['name']]['correct'] += elem['add']['correct']
+                aggregate_stats[elem['add']['name']]['own_total'] += elem['total_own_codes']
+                aggregate_stats[elem['add']['name']]['own_correct'] += elem['own_correct']
                 transform = elem['subtract']['name'] + '_' + elem['add']['name']
                 if transform not in aggregate_stats:
                     aggregate_stats[transform] = {'total': 0, 'correct': 0, 'own_correct': 0, 'own_total': 0}
-                    aggregate_stats[elem['subtract']['name']]['total'] += elem['subtract']['total']
-                    aggregate_stats[elem['subtract']['name']]['correct'] += elem['subtract']['correct']
-                    aggregate_stats[elem['subtract']['name']]['own_total'] += elem['total_own_codes']
-                    aggregate_stats[elem['subtract']['name']]['own_correct'] += elem['own_correct']
+                aggregate_stats[transform]['total'] += elem['subtract']['total']
+                aggregate_stats[transform]['correct'] += elem['subtract']['correct']
+                aggregate_stats[transform]['own_total'] += elem['total_own_codes']
+                aggregate_stats[transform]['own_correct'] += elem['own_correct']
 
     # Log detailed stats results
-    flogger.Log(f'Total examples: {detail_total}, orig correct: {detail_orig_correct}, % correct: {detail_orig_correct / detail_total}')
-    flogger.Log(f'Total own codes: {detail_own_total}, correct own codes: {detail_own_correct}, % correct {detail_own_correct / detail_own_total})
+    flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: Total examples: {detail_total}, orig correct: {detail_orig_correct}, % correct: {detail_orig_correct / detail_total}')
+    flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: Total permutations: {detail_total_permutes_not_filtered}, own_codes: {detail_own_total_total}, % own {detail_own_total_total / detail_total_permutes_not_filtered}')
+    flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: Total own codes: {detail_own_total}, correct own codes: {detail_own_correct}, % correct {detail_own_correct / detail_own_total}')
     flogger.Log('Filtering for originally correct examples with at least one permutation with own codes correct...')
-    flogger.Log(f'Permutations total: {permutes_total}, permutations correct: {permutes_correct}, % {permutes_correct / permutes_total}')
-    norm_total = permutes_total - detail_own_total
+    flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: Permutations total: {permutes_total}, permutations correct: {permutes_correct}, % {permutes_correct / permutes_total}')
+    norm_total = permutes_total - detail_own_correct
     norm_correct = permutes_correct - detail_own_correct
-    flogger.Log(f'Normalized total: {norm_total} normalized correct: {norm_correct}, SIMILARITY: {norm_correct / norm_total}')
-    for key in aggregate_stats.items():
+    flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: Normalized total: {norm_total} normalized correct: {norm_correct}, SIMILARITY: {norm_correct / norm_total}')
+    for key in aggregate_stats:
         _total = aggregate_stats[key]['total']
         _correct = aggregate_stats[key]['correct']
         _own_total = aggregate_stats[key]['own_total']
         _own_correct = aggregate_stats[key]['own_correct']
-        _normalized_total = total - own_total
-        _normalized_correct = correct - own_correct
-        flogger.Log(f'{key}: total: {_total} correct: {_correct} %: {_correct / _total}')
-        flogger.Log(f'{key}: normalized total: {_normalized_total} normalized correct: {_normalized_correct} SIMILARITY: {_normalized_correct / _normalized_total}')
-
+        _normalized_total = _total - _own_total
+        _normalized_correct = _correct - _own_correct
+        if _total > 0:
+            flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: {key}: total: {_total} correct: {_correct} %: {_correct / _total}')
+            if _normalized_total > 0:
+                flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: {key}: normalized total: {_normalized_total} normalized correct: {_normalized_correct} SIMILARITY: {_normalized_correct / _normalized_total}')
+            else:
+                flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: {key}: normalized total: {_normalized_total} normalized correct: {_normalized_correct} SIMILARITY: {0}')
+    
     return test_language_similarity
 
 
@@ -1721,7 +1733,7 @@ def exchange(a1, a2, exchange_args):
         # Optionally change agent 1's message
         if test_language_similarity:
             if (who_goes_first == 1 and exchange_args["change_agent"] == 1) or (who_goes_first == 2 and exchange_args["change_agent"] == 2):
-                debuglogger.info(f'Inside exchange: Changing agent 1 message...')
+                debuglogger.debug(f'Inside exchange: Changing agent 1 message...')
                 a_dict_add = exchange_args["agent_add_dict"]
                 a_dict_sub = exchange_args["agent_subtract_dict"]
                 add = a_dict_add[exchange_args["add"]].unsqueeze(0)
@@ -1732,8 +1744,8 @@ def exchange(a1, a2, exchange_args):
                 new_m_prob = m_1e_probs.data - sub + add
                 new_m_binary = torch.clamp(new_m_prob, 0, 1).round()
                 m_1e_binary = _Variable(new_m_binary)
-                debuglogger.info(f'Old msg: {m_binary_1}, old prob: {m_probs_1}')
-                debuglogger.info(f'New msg: {new_m_binary}, new prob: {new_m_prob}')
+                debuglogger.debug(f'Old msg: {m_binary_1}, old prob: {m_probs_1}')
+                debuglogger.debug(f'New msg: {new_m_binary}, new prob: {new_m_prob}')
 
         # Optionally mute communication channel
         if FLAGS.no_comms_channel:
@@ -1766,7 +1778,7 @@ def exchange(a1, a2, exchange_args):
         # Optionally change agent 2's message
         if test_language_similarity:
             if (who_goes_first == 1 and exchange_args["change_agent"] == 2) or (who_goes_first == 2 and exchange_args["change_agent"] == 1):
-                debuglogger.info(f'Inside exchange: Changing agent 2 message...')
+                debuglogger.debug(f'Inside exchange: Changing agent 2 message...')
                 a_dict_add = exchange_args["agent_add_dict"]
                 a_dict_sub = exchange_args["agent_subtract_dict"]
                 add = a_dict_add[exchange_args["add"]].unsqueeze(0)
@@ -1777,8 +1789,8 @@ def exchange(a1, a2, exchange_args):
                 new_m_prob = m_2e_probs.data - sub + add
                 new_m_binary = torch.clamp(new_m_prob, 0, 1).round()
                 m_2e_binary = _Variable(new_m_binary)
-                debuglogger.info(f'Old msg: {m_binary_1}, old prob: {m_probs_1}')
-                debuglogger.info(f'New msg: {new_m_binary}, new prob: {new_m_prob}')
+                debuglogger.debug(f'Old msg: {m_binary_1}, old prob: {m_probs_1}')
+                debuglogger.debug(f'New msg: {new_m_binary}, new prob: {new_m_prob}')
 
         # Optionally mute communication channel
         if FLAGS.no_comms_channel:
