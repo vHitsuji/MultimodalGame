@@ -761,6 +761,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                     ''' ==========================================================='''
 
                             debuglogger.info(f'Detailed stats: {example_stats}')
+                            debuglogger.info(f'Original stats: {test_language_similarity}')
                             detail_language_similarity.append(example_stats)
                             sys.exit()
 
