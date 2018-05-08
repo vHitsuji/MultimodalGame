@@ -548,7 +548,6 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
             exchange_args["test_language_similarity"] = True
 
             # Construct candidate example to change message to
-            debuglogger.info(f'Iterating through texts and changing messages...')
             debuglogger.info(f'Agent with sight: {batch["non_blank_partition"][_]}')
             # Only select examples where one agent is blind
             if batch['non_blank_partition'][_] != 0:
@@ -579,7 +578,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             if exchange_args["subtract"] is None or exchange_args["add"] is None:
                                 debuglogger.info(f'Skipping example due to None add or subtract...')
                                 continue
-                            debuglogger.info(f'i: {_}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}')
+                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}')
 
                             # Play game with all pairs of codes
                             example_stats = {exchange_args["subtract"]: {'total': 0, 'count': 0},
@@ -761,9 +760,9 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                             example_stats['own_correct'] += 1
                                     ''' ==========================================================='''
 
-                                    debuglogger.info(f'Detailed stats: {example_stats}')
-                                    detail_language_similarity.append(example_stats)
-                                    sys.exit()
+                            debuglogger.info(f'Detailed stats: {example_stats}')
+                            detail_language_similarity.append(example_stats)
+                            sys.exit()
 
     debuglogger.info(f'Total msg changed: {test_language_similarity["total"]}, Correct: {sum(test_language_similarity["correct"])}')
     debuglogger.info(f'Eval total size: {total}')
