@@ -353,26 +353,31 @@ def study_shape_color(data, shape, color, blanks=[]):
               shape + '_' + str(color): {'1': {'all': []}, '2': {'all': []}, 'count': 0}}
     skip_1 = 0
     skip_2 = 0
+    skip_false = 0
     for _, d in enumerate(data):
-        if d['shape'] == shape and d['color'] == color:
-            if convert_tensor_to_string(d['msg_1'][0]) in blanks:
-                skip_1 += 1
-            if convert_tensor_to_string(d['msg_2'][0]) in blanks:
-                skip_2 += 1
-            m_dict = add_shape_color_elem(d, m_dict, shape=shape, color=color, blanks=blanks)
-        elif d['shape'] == shape:
-            if convert_tensor_to_string(d['msg_1'][0]) in blanks:
-                skip_1 += 1
-            if convert_tensor_to_string(d['msg_2'][0]) in blanks:
-                skip_2 += 1
-            m_dict = add_shape_color_elem(d, m_dict, shape=shape, color=None, blanks=blanks)
-        elif d['color'] == color:
-            if convert_tensor_to_string(d['msg_1'][0]) in blanks:
-                skip_1 += 1
-            if convert_tensor_to_string(d['msg_2'][0]) in blanks:
-                skip_2 += 1
-            m_dict = add_shape_color_elem(d, m_dict, shape=None, color=color, blanks=blanks)
-    # print(f'Skipped {skip_1}/{skip_2} messages for {shape} and / or {color}')
+        if d["correct"]:
+            if d['shape'] == shape and d['color'] == color:
+                if convert_tensor_to_string(d['msg_1'][0]) in blanks:
+                    skip_1 += 1
+                if convert_tensor_to_string(d['msg_2'][0]) in blanks:
+                    skip_2 += 1
+                m_dict = add_shape_color_elem(d, m_dict, shape=shape, color=color, blanks=blanks)
+            elif d['shape'] == shape:
+                if convert_tensor_to_string(d['msg_1'][0]) in blanks:
+                    skip_1 += 1
+                if convert_tensor_to_string(d['msg_2'][0]) in blanks:
+                    skip_2 += 1
+                m_dict = add_shape_color_elem(d, m_dict, shape=shape, color=None, blanks=blanks)
+            elif d['color'] == color:
+                if convert_tensor_to_string(d['msg_1'][0]) in blanks:
+                    skip_1 += 1
+                if convert_tensor_to_string(d['msg_2'][0]) in blanks:
+                    skip_2 += 1
+                m_dict = add_shape_color_elem(d, m_dict, shape=None, color=color, blanks=blanks)
+        else:
+            skip_false += 1
+    print(f'Skipped {skip_1}/{skip_2} messages for {shape} and / or {color}')
+    print(f'Skipped {skip_false} messages because the agents got the example wrong')
     '''Calc mean and std of messages per shape, color and shape color'''
     m_dict[color]['1']['all'] = np.stack(m_dict[color]['1']['all'])
     m_dict[color]['2']['all'] = np.stack(m_dict[color]['2']['all'])
