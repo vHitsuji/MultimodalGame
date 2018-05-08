@@ -395,7 +395,264 @@ def save_messages_and_stats(correct, incorrect, agent_tag):
     debuglogger.info(f'Messages saved')
 
 
-def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, i_batch, in_domain_eval=True, callback=None, store_examples=False, analyze_messages=True, save_messages=False, agent_tag="_", agent_dicts=None):
+def get_similarity(agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2, logger, flogger):
+    '''Computes the similarity between two language groups. Can also be used to compute self similarity
+    Args:
+        agent1: first agent, from group 1
+        agent2: second agent, from group 2
+        a1_idx: index of first agent in agent_codes_1
+        a2_idx: index of second agent in agent_codes_2
+        agent_codes_1: average codes for each shape and color (from correct, non blank answers) sent by agents in group 1 (one set for each agent)
+        agent_codes_2: average codes for each shape and color (from correct, non blank answers) sent by agents in group 2 (one set for each agent)
+    '''
+
+    # Keep track of number of correct observations
+    total = 0
+    total_correct_nc = 0
+    total_correct_com = 0
+    atleast1_correct_nc = 0
+    atleast1_correct_com = 0
+
+    # Keep track of score when messages are changed
+    # TODO expand to new setup
+    test_language_similarity = {}
+    if agent_dicts is not None:
+        test_language_similarity = {"total": 0, "correct": [], "agent_w_changed_msg": [], "shape": [], "color": [], "orig_shape": [], "orig_color": [], "originally_correct": []}
+
+    # Load development images
+    if in_domain_eval:
+        eval_mode = "train"
+        debuglogger.info("Evaluating on in domain validation set")
+    else:
+        eval_mode = FLAGS.dataset_eval_mode
+        debuglogger.info("Evaluating on out of domain validation set")
+    dev_loader = load_shapeworld_dataset(dataset_path, FLAGS.glove_path, eval_mode, FLAGS.dataset_size_dev, FLAGS.dataset_type, FLAGS.dataset_name, FLAGS.batch_size_dev, FLAGS.random_seed, FLAGS.shuffle_dev, FLAGS.img_feat, FLAGS.cuda, truncate_final_batch=False)
+
+    _batch_counter = 0
+    for batch in dev_loader:
+        _batch_counter += 1
+        debuglogger.debug(f'Batch {_batch_counter}')
+        target = batch["target"]
+        im_feats_1 = batch["im_feats_1"]
+        im_feats_2 = batch["im_feats_2"]
+        p = batch["p"]
+        desc = Variable(batch["texts_vec"])
+        _batch_size = target.size(0)
+
+        true_labels.append(target.cpu().numpy().reshape(-1))
+
+        # GPU support
+        if FLAGS.cuda:
+            im_feats_1 = im_feats_1.cuda()
+            im_feats_2 = im_feats_2.cuda()
+            target = target.cuda()
+            desc = desc.cuda()
+
+        data = {"im_feats_1": im_feats_1,
+                "im_feats_2": im_feats_2,
+                "p": p}
+
+        exchange_args = dict()
+        exchange_args["data"] = data
+        exchange_args["target"] = target
+        exchange_args["desc"] = desc
+        exchange_args["train"] = False
+        exchange_args["break_early"] = not FLAGS.fixed_exchange
+
+        s, message_1, message_2, y_all, r = exchange(
+            agent1, agent2, exchange_args)
+
+        s_masks_1, s_feats_1, s_probs_1 = s[0]
+        s_masks_2, s_feats_2, s_probs_2 = s[1]
+        feats_1, probs_1 = message_1
+        feats_2, probs_2 = message_2
+        y_nc = y_all[0]
+        y = y_all[1]
+
+        # Mask loss if dynamic exchange length
+        if FLAGS.fixed_exchange:
+            binary_s_masks = None
+            binary_agent1_masks = None
+            binary_agent2_masks = None
+            bas_agent1_masks = None
+            bas_agent2_masks = None
+            y1_masks = None
+            y2_masks = None
+            outp_1 = y[0][-1]
+            outp_2 = y[1][-1]
+        else:
+            # TODO
+            pass
+
+        # Before communication predictions
+        # Obtain predictions, loss and stats agent 1
+        (dist_1_nc, maxdist_1_nc, argmax_1_nc, ent_1_nc, nll_loss_1_nc,
+         logs_1_nc) = get_classification_loss_and_stats(y_nc[0], target)
+        # Obtain predictions, loss and stats agent 2
+        (dist_2_nc, maxdist_2_nc, argmax_2_nc, ent_2_nc, nll_loss_2_nc,
+         logs_2_nc) = get_classification_loss_and_stats(y_nc[1], target)
+        # After communication predictions
+        # Obtain predictions, loss and stats agent 1
+        (dist_1, maxdist_1, argmax_1, ent_1, nll_loss_1_com,
+         logs_1) = get_classification_loss_and_stats(outp_1, target)
+        # Obtain predictions, loss and stats agent 2
+        (dist_2, maxdist_2, argmax_2, ent_2, nll_loss_2_com,
+         logs_2) = get_classification_loss_and_stats(outp_2, target)
+
+        # Store top 1 prediction for confusion matrix
+        pred_labels_1_nc.append(argmax_1_nc.cpu().numpy())
+        pred_labels_1_com.append(argmax_1.cpu().numpy())
+        pred_labels_2_nc.append(argmax_2_nc.cpu().numpy())
+        pred_labels_2_com.append(argmax_2.cpu().numpy())
+
+        # Calculate number of correct observations for different types
+        accuracy_1_nc, correct_1_nc, top_1_1_nc = calculate_accuracy(
+            dist_1_nc, target, FLAGS.batch_size_dev, FLAGS.top_k_dev)
+        accuracy_1, correct_1, top_1_1 = calculate_accuracy(
+            dist_1, target, FLAGS.batch_size_dev, FLAGS.top_k_dev)
+        accuracy_2_nc, correct_2_nc, top_1_2_nc = calculate_accuracy(
+            dist_2_nc, target, FLAGS.batch_size_dev, FLAGS.top_k_dev)
+        accuracy_2, correct_2, top_1_2 = calculate_accuracy(
+            dist_2, target, FLAGS.batch_size_dev, FLAGS.top_k_dev)
+        batch_correct_nc = correct_1_nc.float() + correct_2_nc.float()
+        batch_correct_com = correct_1.float() + correct_2.float()
+        batch_correct_top_1_nc = top_1_1_nc.float() + top_1_2_nc.float()
+        batch_correct_top_1_com = top_1_1.float() + top_1_2.float()
+
+        # Update accuracy counts
+        total += float(_batch_size)
+        total_correct_nc += (batch_correct_nc == 2).sum()
+        total_correct_com += (batch_correct_com == 2).sum()
+        atleast1_correct_nc += (batch_correct_nc > 0).sum()
+        atleast1_correct_com += (batch_correct_com > 0).sum()
+
+        # Get correct indices
+        correct_indices_nc = (batch_correct_nc == 2)
+        correct_indices_com = (batch_correct_com == 2)
+
+        # Test compositionality
+        # TODO expand to new setup
+        for _ in range(_batch_size):
+            # Construct batch of size 1
+            data = {"im_feats_1": im_feats_1[_].unsqueeze(0),
+                    "im_feats_2": im_feats_2[_].unsqueeze(0),
+                    "p": p[_]}
+            exchange_args = dict()
+            exchange_args["data"] = data
+            exchange_args["desc"] = desc[_].unsqueeze(0)
+            exchange_args["train"] = False
+            exchange_args["break_early"] = not FLAGS.fixed_exchange
+            exchange_args["test_language_similarity"] = True
+
+            # Construct candidate example to change message to
+            debuglogger.info(f'Iterating through texts and changing messages...')
+            debuglogger.info(f'Agent with sight: {batch["non_blank_partition"][_]}')
+            # Only select examples where one agent is blind
+            if batch['non_blank_partition'][_] != 0:
+                change_agent = batch['non_blank_partition'][_]
+                texts = batch["texts_str"][_]
+                s = batch["shapes"][_]
+                c = batch["colors"][_]
+                debuglogger.info(f'i: {_}, caption: {batch["caption_str"][_]}, original target: {target[_]}, Correct? {correct_1[_]}/{correct_2[_]}')
+                debuglogger.debug(f'i: {_}, texts: {texts}')
+                debuglogger.debug(f'i: {_}, texts_shapes: {batch["texts_shapes"][_]}')
+                debuglogger.debug(f'i: {_}, texts_colors: {batch["texts_colors"][_]}')
+                for _t, t in enumerate(texts):
+                    # Only select examples that are different to the current target
+                    if _t != target[_]:
+                        st = batch["texts_shapes"][_][_t]
+                        ct = batch["texts_colors"][_][_t]
+                        # Only select examples where there is a different of either the shape or the color, not both
+                        if (st == s and ct != c) or (st != s and ct == c):
+                            exchange_args["target"] = _t
+                            exchange_args["change_agent"] = change_agent
+                            # TODO - change to loop through all combinations
+                            if change_agent == 1:
+                                exchange_args["agent_subtract_dict"] = agent_codes_1[a1_idx - 1]
+                                exchange_args["agent_add_dict"] = agent_codes_1[a1_idx - 1]
+                            else:
+                                exchange_args["agent_subtract_dict"] = agent_codes_2[a2_idx - 1]
+                                exchange_args["agent_add_dict"] = agent_codes_2[a2_idx - 1]
+                            if ct != c:
+                                exchange_args["subtract"] = c
+                                exchange_args["add"] = ct
+                            else:
+                                exchange_args["subtract"] = s
+                                exchange_args["add"] = st
+                            # Discard examples which involve adding or subtracting "None" (no code for this)
+                            if exchange_args["subtract"] is None or exchange_args["add"] is None:
+                                debuglogger.info(f'Skipping example due to None add or subtract...')
+                                continue
+                            debuglogger.info(f'i: {_}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}')
+
+                            # Play game, corrupting message
+                            _s, message_1, message_2, y_all, r = exchange(
+                                agent1, agent2, exchange_args)
+
+                            s_masks_1, s_feats_1, s_probs_1 = _s[0]
+                            s_masks_2, s_feats_2, s_probs_2 = _s[1]
+                            feats_1, probs_1 = message_1
+                            feats_2, probs_2 = message_2
+                            y_nc = y_all[0]
+                            y = y_all[1]
+
+                            # We only care about after communication predictions when measuring the peformance
+                            score = None
+                            new_target = torch.zeros(1).fill_(_t).long()
+                            debuglogger.info(f'Old target: {target[_]}')
+                            na, argmax_y1 = torch.max(y[0][-1], 1)
+                            na, argmax_y2 = torch.max(y[1][-1], 1)
+                            debuglogger.debug(f'y1 logits: {y[0][-1].data}, y2 logits: {y[1][-1].data}')
+                            debuglogger.info(f'y1: {argmax_y1.data[0]}, y2: {argmax_y2.data[0]}, new_target: {new_target[0]}')
+                            if FLAGS.cuda:
+                                new_target = new_target.cuda()
+                            if change_agent == 1:
+                                # Calculate score for agent 2
+                                (dist_2_change, na, na, na, na, na) = get_classification_loss_and_stats(y[1][-1], new_target)
+                                debuglogger.debug(f'dist: {dist_2_change.data}')
+                                na, na, top_1_2_change = calculate_accuracy(
+                                    dist_2_change, new_target, 1, FLAGS.top_k_dev)
+                                score = top_1_2_change
+                            else:
+                                # Calculate score for agent 1
+                                (dist_1_change, na, na, na, na, na) = get_classification_loss_and_stats(y[0][-1], new_target)
+                                debuglogger.debug(f'dist: {dist_1_change.data}')
+                                na, na, top_1_1_change = calculate_accuracy(
+                                    dist_1_change, new_target, 1, FLAGS.top_k_dev)
+                                score = top_1_1_change
+                            debuglogger.info(f'i: {_}_{_t}: New caption: {t}, new target: {_t}, change_agent: {change_agent}, correct: {score[0]}, originally correct: {correct_1[_]}/{correct_2[_]}')
+
+                            # Store results
+                            test_language_similarity["total"] += 1
+                            test_language_similarity["orig_shape"].append(s)
+                            test_language_similarity["orig_color"].append(c)
+
+                            if score[0] == 1:
+                                test_language_similarity["correct"].append(1)
+                            else:
+                                test_language_similarity["correct"].append(0)
+                            if change_agent == 2:
+                                # The other agent had their message changed
+                                test_language_similarity["originally_correct"].append(correct_1[_])
+                                test_language_similarity["agent_w_changed_msg"].append(1)
+                            else:
+                                test_language_similarity["originally_correct"].append(correct_2[_])
+                                test_language_similarity["agent_w_changed_msg"].append(2)
+                            if ct != c:
+                                test_language_similarity["shape"].append(None)
+                                test_language_similarity["color"].append(ct)
+                            else:
+                                test_language_similarity["shape"].append(st)
+                                test_language_similarity["color"].append(None)
+
+    debuglogger.info(f'Total msg changed: {test_language_similarity["total"]}, Correct: {sum(test_language_similarity["correct"])}')
+    debuglogger.info(f'Eval total size: {total}')
+    debuglogger.info(f'Eval total correct com: {total_correct_com}')
+    # TODO log detailed analysis of new setup
+    return test_language_similarity
+
+
+def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, i_batch, in_domain_eval=True, callback=None, store_examples=False, analyze_messages=True, save_messages=False, agent_tag="_", agent_dicts=None, agent_idxs=None):
     """
     Function computing development accuracy and other metrics
     """
@@ -480,11 +737,6 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     total_correct_com = 0
     atleast1_correct_nc = 0
     atleast1_correct_com = 0
-
-    # Keep track of score when messages are changed
-    test_compositionality = {}
-    if agent_dicts is not None:
-        test_compositionality = {"total": 0, "correct": [], "agent_w_changed_msg": [], "shape": [], "color": [], "orig_shape": [], "orig_color": [], "originally_correct": []}
 
     # Load development images
     if in_domain_eval:
@@ -753,113 +1005,10 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
                 y=y)
             callback(agent1, agent2, batch, callback_dict)
 
-        if agent_dicts is not None:
-            # Test compositionality
-            for _ in range(_batch_size):
-                # Construct batch of size 1
-                data = {"im_feats_1": im_feats_1[_].unsqueeze(0),
-                        "im_feats_2": im_feats_2[_].unsqueeze(0),
-                        "p": p[_]}
-                exchange_args = dict()
-                exchange_args["data"] = data
-                exchange_args["desc"] = desc[_].unsqueeze(0)
-                exchange_args["train"] = False
-                exchange_args["break_early"] = not FLAGS.fixed_exchange
-                exchange_args["test_compositionality"] = True
-                # Construct candidate example to change message to
-                # Only select examples where one agent is blind
-                debuglogger.info(f'Iterating through texts and changing messages...')
-                debuglogger.info(f'Agent with sight: {batch["non_blank_partition"][_]}')
-                if batch['non_blank_partition'][_] != 0:
-                    change_agent = batch['non_blank_partition'][_]
-                    texts = batch["texts_str"][_]
-                    s = batch["shapes"][_]
-                    c = batch["colors"][_]
-                    debuglogger.info(f'i: {_}, caption: {batch["caption_str"][_]}, original target: {target[_]}, Correct? {correct_1[_]}/{correct_2[_]}')
-                    debuglogger.info(f'i: {_}, texts: {texts}')
-                    debuglogger.info(f'i: {_}, texts_shapes: {batch["texts_shapes"][_]}')
-                    debuglogger.info(f'i: {_}, texts_colors: {batch["texts_colors"][_]}')
-                    for _t, t in enumerate(texts):
-                        if _t != target[_]:
-                            st = batch["texts_shapes"][_][_t]
-                            ct = batch["texts_colors"][_][_t]
-                            if (st == s and ct != c) or (st != s and ct == c):
-                                exchange_args["target"] = _t
-                                exchange_args["change_agent"] = change_agent
-                                exchange_args["agent_dict"] = agent_dicts[change_agent - 1]
-                                if ct != c:
-                                    exchange_args["subtract"] = c
-                                    exchange_args["add"] = ct
-                                else:
-                                    exchange_args["subtract"] = s
-                                    exchange_args["add"] = st
-                                if exchange_args["subtract"] is None or exchange_args["add"] is None:
-                                    debuglogger.info(f'Skipping example due to None add or subtract...')
-                                    continue
-                                debuglogger.info(f'i: {_}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}')
-                                # Play game, corrupting message
-                                _s, message_1, message_2, y_all, r = exchange(
-                                    agent1, agent2, exchange_args)
-
-                                s_masks_1, s_feats_1, s_probs_1 = _s[0]
-                                s_masks_2, s_feats_2, s_probs_2 = _s[1]
-                                feats_1, probs_1 = message_1
-                                feats_2, probs_2 = message_2
-                                y_nc = y_all[0]
-                                y = y_all[1]
-
-                                # Only care about after communication predictions
-                                score = None
-                                new_target = torch.zeros(1).fill_(_t).long()
-                                debuglogger.info(f'Old target: {target[_]}')
-                                na, argmax_y1 = torch.max(y[0][-1], 1)
-                                na, argmax_y2 = torch.max(y[1][-1], 1)
-                                debuglogger.info(f'y1 logits: {y[0][-1].data}, y2 logits: {y[1][-1].data}')
-                                debuglogger.info(f'y1: {argmax_y1.data[0]}, y2: {argmax_y2.data[0]}, new_target: {new_target[0]}')
-                                if FLAGS.cuda:
-                                    new_target = new_target.cuda()
-                                if change_agent == 1:
-                                    # Calculate score for agent 2
-                                    (dist_2_change, na, na, na, na, na) = get_classification_loss_and_stats(y[1][-1], new_target)
-                                    debuglogger.info(f'dist: {dist_2_change.data}')
-                                    na, na, top_1_2_change = calculate_accuracy(
-                                        dist_2_change, new_target, 1, FLAGS.top_k_dev)
-                                    score = top_1_2_change
-                                else:
-                                    # Calculate score for agent 1
-                                    (dist_1_change, na, na, na, na, na) = get_classification_loss_and_stats(y[0][-1], new_target)
-                                    debuglogger.info(f'dist: {dist_1_change.data}')
-                                    na, na, top_1_1_change = calculate_accuracy(
-                                        dist_1_change, new_target, 1, FLAGS.top_k_dev)
-                                    score = top_1_1_change
-                                debuglogger.info(f'i: {_}_{_t}: New caption: {t}, new target: {_t}, change_agent: {change_agent}, correct: {score[0]}, originally correct: {correct_1[_]}/{correct_2[_]}')
-
-                                # Store results
-                                test_compositionality["total"] += 1
-                                test_compositionality["orig_shape"].append(s)
-                                test_compositionality["orig_color"].append(c)
-
-                                if score[0] == 1:
-                                    test_compositionality["correct"].append(1)
-                                else:
-                                    test_compositionality["correct"].append(0)
-                                if change_agent == 2:
-                                    # The other agent had their message changed
-                                    test_compositionality["originally_correct"].append(correct_1[_])
-                                    test_compositionality["agent_w_changed_msg"].append(1)
-                                else:
-                                    test_compositionality["originally_correct"].append(correct_2[_])
-                                    test_compositionality["agent_w_changed_msg"].append(2)
-                                if ct != c:
-                                    test_compositionality["shape"].append(None)
-                                    test_compositionality["color"].append(ct)
-                                else:
-                                    test_compositionality["shape"].append(st)
-                                    test_compositionality["color"].append(None)
-
+    test_language_similarity = {}
     if agent_dicts is not None:
-        debuglogger.info(f'Total msg changed: {test_compositionality["total"]}, Correct: {sum(test_compositionality["correct"])}')
-
+        test_language_similarity = get_similarity(agent1, agent2, agent_idxs[0], agent_idxs[1], agent_dicts[0], agent_dicts[1], logger, flogger)
+        debuglogger.info(f'Total msg changed: {test_language_similarity["total"]}, Correct: {sum(test_language_similarity["correct"])}')
     if store_examples:
         debuglogger.info(f'Finishing iterating through dev set, storing examples...')
         store_exemplar_batch(correct_to_analyze, "correct", logger, flogger)
@@ -903,7 +1052,7 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     extra['shapes_colors_accuracy'] = shapes_colors_accuracy
     extra['agent1_performance'] = agent1_performance
     extra['agent2_performance'] = agent2_performance
-    extra['test_compositionality'] = test_compositionality
+    extra['test_language_similarity'] = test_language_similarity
 
     debuglogger.info(f'Eval total size: {total}')
     debuglogger.info(f'Eval total correct com: {total_correct_com}')
@@ -1101,9 +1250,9 @@ def get_and_log_dev_performance(agent1, agent2, dataset_path, in_domain_eval, de
                     domain, 'TOTAL SHAPES_COLORS out of domain', ood_total, ood_correct, ood_correct / ood_total))
 
     if agent_dicts is not None:
-        flogger.Log('Test compositionality performance')
+        flogger.Log('Test language similarity performance')
         comp_dict = {}
-        comp_data = extra['test_compositionality']
+        comp_data = extra['test_language_similarity']
         correct_orig_correct = 0
         correct_orig_incorrect = 0
         orig_correct = 0
@@ -1250,6 +1399,7 @@ def exchange(a1, a2, exchange_args):
         desc: List of description vectors.
         train: Boolean value indicating training mode (True) or evaluation mode (False).
         break_early: Boolean value. If True, then terminate batched conversation if both agents are satisfied
+        test_language_similarity: Boolean: whether to test the language similarity using communication vector arithmetric
 
     Function Args:
         a1: agent1
@@ -1302,7 +1452,7 @@ def exchange(a1, a2, exchange_args):
     break_early = exchange_args.get("break_early", False)
     corrupt = exchange_args.get("corrupt", False)
     corrupt_region = exchange_args.get("corrupt_region", None)
-    test_compositionality = exchange_args.get("test_compositionality", False)
+    test_language_similarity = exchange_args.get("test_language_similarity", False)
     batch_size = data["im_feats_1"].size(0)
 
     # Pad with one column of ones.
@@ -1394,12 +1544,13 @@ def exchange(a1, a2, exchange_args):
             m_1e_binary = corrupt_message(corrupt_region, agent1, m_1e_binary)
 
         # Optionally change agent 1's message
-        if test_compositionality:
+        if test_language_similarity:
             if (who_goes_first == 1 and exchange_args["change_agent"] == 1) or (who_goes_first == 2 and exchange_args["change_agent"] == 2):
                 debuglogger.info(f'Inside exchange: Changing agent 1 message...')
-                a_dict = exchange_args["agent_dict"]
-                add = a_dict[exchange_args["add"]].unsqueeze(0)
-                sub = a_dict[exchange_args["subtract"]].unsqueeze(0)
+                a_dict_add = exchange_args["agent_add_dict"]
+                a_dict_sub = exchange_args["agent_subtract_dict"]
+                add = a_dict_add[exchange_args["add"]].unsqueeze(0)
+                sub = a_dict_sub[exchange_args["subtract"]].unsqueeze(0)
                 if FLAGS.cuda:
                     add = add.cuda()
                     sub = sub.cuda()
@@ -1438,12 +1589,13 @@ def exchange(a1, a2, exchange_args):
             m_2e_binary = corrupt_message(corrupt_region, agent2, m_2e_binary)
 
         # Optionally change agent 2's message
-        if test_compositionality:
+        if test_language_similarity:
             if (who_goes_first == 1 and exchange_args["change_agent"] == 2) or (who_goes_first == 2 and exchange_args["change_agent"] == 1):
                 debuglogger.info(f'Inside exchange: Changing agent 2 message...')
-                a_dict = exchange_args["agent_dict"]
-                add = a_dict[exchange_args["add"]].unsqueeze(0)
-                sub = a_dict[exchange_args["subtract"]].unsqueeze(0)
+                a_dict_add = exchange_args["agent_add_dict"]
+                a_dict_sub = exchange_args["agent_subtract_dict"]
+                add = a_dict_add[exchange_args["add"]].unsqueeze(0)
+                sub = a_dict_sub[exchange_args["subtract"]].unsqueeze(0)
                 if FLAGS.cuda:
                     add = add.cuda()
                     sub = sub.cuda()
