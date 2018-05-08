@@ -395,7 +395,7 @@ def save_messages_and_stats(correct, incorrect, agent_tag):
     debuglogger.info(f'Messages saved')
 
 
-def get_similarity(agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2, logger, flogger):
+def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2, logger, flogger):
     '''Computes the similarity between two language groups. Can also be used to compute self similarity
     Args:
         agent1: first agent, from group 1
@@ -405,6 +405,12 @@ def get_similarity(agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2,
         agent_codes_1: average codes for each shape and color (from correct, non blank answers) sent by agents in group 1 (one set for each agent)
         agent_codes_2: average codes for each shape and color (from correct, non blank answers) sent by agents in group 2 (one set for each agent)
     '''
+    # Keep track of labels
+    true_labels = []
+    pred_labels_1_nc = []
+    pred_labels_1_com = []
+    pred_labels_2_nc = []
+    pred_labels_2_com = []
 
     # Keep track of number of correct observations
     total = 0
@@ -415,9 +421,7 @@ def get_similarity(agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2,
 
     # Keep track of score when messages are changed
     # TODO expand to new setup
-    test_language_similarity = {}
-    if agent_dicts is not None:
-        test_language_similarity = {"total": 0, "correct": [], "agent_w_changed_msg": [], "shape": [], "color": [], "orig_shape": [], "orig_color": [], "originally_correct": []}
+    test_language_similarity = {"total": 0, "correct": [], "agent_w_changed_msg": [], "shape": [], "color": [], "orig_shape": [], "orig_color": [], "originally_correct": []}
 
     # Load development images
     if in_domain_eval:
@@ -568,11 +572,11 @@ def get_similarity(agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2,
                             exchange_args["change_agent"] = change_agent
                             # TODO - change to loop through all combinations
                             if change_agent == 1:
-                                exchange_args["agent_subtract_dict"] = agent_codes_1[a1_idx - 1]
-                                exchange_args["agent_add_dict"] = agent_codes_1[a1_idx - 1]
+                                exchange_args["agent_subtract_dict"] = agent_codes_1[a1_idx]
+                                exchange_args["agent_add_dict"] = agent_codes_1[a1_idx]
                             else:
-                                exchange_args["agent_subtract_dict"] = agent_codes_2[a2_idx - 1]
-                                exchange_args["agent_add_dict"] = agent_codes_2[a2_idx - 1]
+                                exchange_args["agent_subtract_dict"] = agent_codes_2[a2_idx]
+                                exchange_args["agent_add_dict"] = agent_codes_2[a2_idx]
                             if ct != c:
                                 exchange_args["subtract"] = c
                                 exchange_args["add"] = ct
@@ -1007,7 +1011,7 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
 
     test_language_similarity = {}
     if agent_dicts is not None:
-        test_language_similarity = get_similarity(agent1, agent2, agent_idxs[0], agent_idxs[1], agent_dicts[0], agent_dicts[1], logger, flogger)
+        test_language_similarity = get_similarity(dataset_path, in_domain_eval, agent1, agent2, agent_idxs[0], agent_idxs[1], agent_dicts[0], agent_dicts[1], logger, flogger)
         debuglogger.info(f'Total msg changed: {test_language_similarity["total"]}, Correct: {sum(test_language_similarity["correct"])}')
     if store_examples:
         debuglogger.info(f'Finishing iterating through dev set, storing examples...')
@@ -1065,10 +1069,10 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     return total_accuracy_nc, total_accuracy_com, atleast1_accuracy_nc, atleast1_accuracy_com, extra
 
 
-def get_and_log_dev_performance(agent1, agent2, dataset_path, in_domain_eval, dev_accuracy_log, logger, flogger, domain, epoch, step, i_batch, store_examples, analyze_messages, save_messages, agent_tag, agent_dicts=None):
+def get_and_log_dev_performance(agent1, agent2, dataset_path, in_domain_eval, dev_accuracy_log, logger, flogger, domain, epoch, step, i_batch, store_examples, analyze_messages, save_messages, agent_tag, agent_dicts=None, agent_idxs=None):
     '''Logs performance on the dev set'''
     total_accuracy_nc, total_accuracy_com, atleast1_accuracy_nc, atleast1_accuracy_com, extra = eval_dev(
-        dataset_path, FLAGS.top_k_dev, agent1, agent2, logger, flogger, epoch, step, i_batch, in_domain_eval=in_domain_eval, callback=None, store_examples=store_examples, analyze_messages=analyze_messages, save_messages=save_messages, agent_tag=agent_tag, agent_dicts=agent_dicts)
+        dataset_path, FLAGS.top_k_dev, agent1, agent2, logger, flogger, epoch, step, i_batch, in_domain_eval=in_domain_eval, callback=None, store_examples=store_examples, analyze_messages=analyze_messages, save_messages=save_messages, agent_tag=agent_tag, agent_dicts=agent_dicts, agent_idxs=agent_idxs)
     dev_accuracy_log['total_acc_both_nc'].append(total_accuracy_nc)
     dev_accuracy_log['total_acc_both_com'].append(total_accuracy_com)
     dev_accuracy_log['total_acc_atl1_nc'].append(atleast1_accuracy_nc)
@@ -1860,10 +1864,10 @@ def run():
             flogger.Log("Total number of agents does not match sum of agents in each community")
             sys.exit()
         flogger.Log(f'Total number of agents: {FLAGS.num_agents}, Agents per community: {num_agents_per_community}')
-    if FLAGS.test_compositionality and not FLAGS.eval_only:
-        flogger.Log("Can only test compositionality in eval only mode")
+    if FLAGS.test_language_similarity and not FLAGS.eval_only:
+        flogger.Log("Can only test language similarity in eval only mode")
         sys.exit()
-    if FLAGS.test_compositionality:
+    if FLAGS.test_language_similarity:
         if len(FLAGS.agent_dicts) != FLAGS.num_agents:
             flogger.Log("There must be a code dictionary per agent")
             sys.exit()
@@ -2078,12 +2082,14 @@ def run():
                 # Report out of domain development accuracy
                 dev_accuracy_ood[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_path, False, dev_accuracy_ood[i], logger, flogger, f'Out of Domain Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag="")
 
-        elif FLAGS.test_compositionality:
+        elif FLAGS.test_language_similarity:
             # Load agent dictionaries
             code_dicts = []
             for i in range(FLAGS.num_agents):
                 _ = pickle.load(open(FLAGS.agent_dicts[i], 'rb'))
                 code_dicts.append(_)
+            # TODO set up for 2 arbitrary groups of agents
+            # i.e. need to specify two pools from a group, construct 2 separate code dicts and loop through pairs differently
             for i in range(FLAGS.num_agents - 1):
                 flogger.Log("Agent 1: {}".format(i + 1))
                 logger.log(key="Agent 1: ", val=i + 1, step=step)
@@ -2091,7 +2097,7 @@ def run():
                 flogger.Log("Agent 2: {}".format(i + 2))
                 logger.log(key="Agent 2: ", val=i + 2, step=step)
                 agent2 = models_dict["agent" + str(i + 2)]
-                dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=True, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=(code_dicts[i], code_dicts[i + 1]))
+                dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts, code_dicts], agent_idxs=[i, i + 1])
 
         elif FLAGS.agent_communities:
             eval_community(eval_agent_list, models_dict, dev_accuracy_id[0], logger, flogger, epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag="no_tag")
@@ -2740,6 +2746,8 @@ def flags():
     gflags.DEFINE_string("log_load", None, "")
     gflags.DEFINE_boolean("eval_only", False, "")
     gflags.DEFINE_boolean("eval_xproduct", False, "Whether to evaluate the full cross product of agent pairs")
+    gflags.DEFINE_boolean("test_language_similarity", False,
+                          "Whether to test language similarity by changing trained agent messages, eval only option")
 
     # Extract Settings
     gflags.DEFINE_boolean("binary_only", False,
@@ -2809,8 +2817,6 @@ def flags():
                           "Encoding whether agents uses binary features")
     gflags.DEFINE_boolean("no_comms_channel", False,
                           "Whether to mute the communications channel")
-    gflags.DEFINE_boolean("test_compositionality", False,
-                          "Whether to test compositionality by changing trained agent messages, eval only option")
     gflags.DEFINE_list("agent_dicts", ['None', 'None'], "list of paths to average message code dictionaries")
     gflags.DEFINE_boolean("randomize_comms", False,
                           "Whether to randomize the order in which agents communicate")
