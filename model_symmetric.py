@@ -581,8 +581,8 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}')
 
                             # Play game with all pairs of codes
-                            example_stats = {exchange_args["subtract"]: {'total': 0, 'count': 0},
-                                             exchange_args["add"]: {'total': 0, 'count': 0},
+                            example_stats = {exchange_args["subtract"]: {'total': 0, 'correct': 0},
+                                             exchange_args["add"]: {'total': 0, 'correct': 0},
                                              'own_correct': 0,
                                              'originally_correct': 0,
                                              'total_permuations': 0,
