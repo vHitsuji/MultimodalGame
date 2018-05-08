@@ -2455,7 +2455,7 @@ def run():
                             if i == 0:
                                 # Report in domain development accuracy and store examples
                                 dev_accuracy_id_pairs[i], total_accuracy_com = get_and_log_dev_performance(
-                                    _agent1, _agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id_pairs[i], logger, flogger, f'In Domain: Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=True, analyze_messages=False, save_messages=False, agent_tag=f'A_{i + 1}_{i + 2}')
+                                    _agent1, _agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id_pairs[i], logger, flogger, f'In Domain: Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'A_{i + 1}_{i + 2}')
                             else:
                                 # Report in domain development accuracy
                                 dev_accuracy_id_pairs[i], total_accuracy_com = get_and_log_dev_performance(
@@ -2463,7 +2463,7 @@ def run():
 
                 # Report out of domain development accuracy
                 dev_accuracy_ood, total_accuracy_com = get_and_log_dev_performance(
-                    agent1, agent2, FLAGS.dataset_path, False, dev_accuracy_ood, logger, flogger, f'Out of Domain:', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag="no_tag")
+                    agent1, agent2, FLAGS.dataset_outdomain_valid_path, True, dev_accuracy_ood, logger, flogger, "Out of Domain", epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag="no_tag")
 
             # Report in domain development accuracy when training agent communities
             if FLAGS.agent_communities and step % FLAGS.log_community_eval == 0:
