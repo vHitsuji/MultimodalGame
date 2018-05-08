@@ -581,10 +581,11 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}')
 
                             # Play game with all pairs of codes
-                            example_stats = {exchange_args["subtract"]: {'total': 0, 'correct': 0},
-                                             exchange_args["add"]: {'total': 0, 'correct': 0},
+                            example_stats = {'subtract': {'name': exchange_args["subtract"], 'total': 0, 'correct': 0},
+                                             'add': {'name': exchange_args["add"], 'total': 0, 'correct': 0},
                                              'own_correct': 0,
                                              'originally_correct': 0,
+                                             'correct_permuations': 0,
                                              'total_permuations': 0,
                                              'total_own_codes': 0}
                             for _g1 in range(len(agent_codes_1)):
@@ -664,11 +665,12 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
 
                                     # Track detailed results
                                     example_stats['total_permuations'] += 1
-                                    example_stats[exchange_args["subtract"]]["total"] += 1
-                                    example_stats[exchange_args["add"]]["total"] += 1
+                                    example_stats['subtract']["total"] += 1
+                                    example_stats['add']["total"] += 1
                                     if score[0] == 1:
-                                        example_stats[exchange_args["subtract"]]["correct"] += 1
-                                        example_stats[exchange_args["add"]]["correct"] += 1
+                                        example_stats["subtract"]["correct"] += 1
+                                        example_stats["add"]["correct"] += 1
+                                        example_stats["correct_permutations"] += 1
                                     if change_agent == 2:
                                         example_stats['originally_correct'] = correct_1[_]
                                     else:
@@ -745,11 +747,12 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
 
                                     # Track detailed results
                                     example_stats['total_permuations'] += 1
-                                    example_stats[exchange_args["subtract"]]["total"] += 1
-                                    example_stats[exchange_args["add"]]["total"] += 1
+                                    example_stats['subtract']["total"] += 1
+                                    example_stats['add']["total"] += 1
                                     if score[0] == 1:
-                                        example_stats[exchange_args["subtract"]]["correct"] += 1
-                                        example_stats[exchange_args["add"]]["correct"] += 1
+                                        example_stats["subtract"]["correct"] += 1
+                                        example_stats["add"]["correct"] += 1
+                                        example_stats["correct_permutations"] += 1
                                     if change_agent == 2:
                                         example_stats['originally_correct'] = correct_1[_]
                                     else:
@@ -766,7 +769,61 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
     debuglogger.info(f'Total msg changed: {test_language_similarity["total"]}, Correct: {sum(test_language_similarity["correct"])}')
     debuglogger.info(f'Eval total size: {total}')
     debuglogger.info(f'Eval total correct com: {total_correct_com}')
-    # TODO log detailed analysis of new setup
+
+    aggregate_stats = {}
+    detail_total = 0
+    detail_orig_correct = 0
+    detail_own_total = 0
+    detail_own_correct = 0
+    permutes_total = 0
+    permutes_correct = 0
+    for elem in detail_language_similarity:
+        detail_total += 1
+        if elem["originally_correct"]:
+            detail_orig_correct += 1
+            detail_own_total += elem['total_own_codes']
+            if elem['own_correct'] > 0:
+                detail_own_correct += elem['own_total']
+                permutes_total += elem['total_permutations']
+                permutes_correct += elem['correct_permutations']
+                if elem['subtract']['name'] not in aggregate_stats:
+                    aggregate_stats[elem['subtract']['name']] = {'total': 0, 'correct': 0, 'own_correct': 0, 'own_total': 0}
+                    aggregate_stats[elem['subtract']['name']]['total'] += elem['subtract']['total']
+                    aggregate_stats[elem['subtract']['name']]['correct'] += elem['subtract']['correct']
+                    aggregate_stats[elem['subtract']['name']]['own_total'] += elem['total_own_codes']
+                    aggregate_stats[elem['subtract']['name']]['own_correct'] += elem['own_correct']
+                if elem['add']['name'] not in aggregate_stats:
+                    aggregate_stats[elem['add']['name']] = {'total': 0, 'correct': 0, 'own_correct': 0, 'own_total': 0}
+                    aggregate_stats[elem['add']['name']]['total'] += elem['add']['total']
+                    aggregate_stats[elem['add']['name']]['correct'] += elem['add']['correct']
+                    aggregate_stats[elem['add']['name']]['own_total'] += elem['total_own_codes']
+                    aggregate_stats[elem['add']['name']]['own_correct'] += elem['own_correct']
+                transform = elem['subtract']['name'] + '_' + elem['add']['name']
+                if transform not in aggregate_stats:
+                    aggregate_stats[transform] = {'total': 0, 'correct': 0, 'own_correct': 0, 'own_total': 0}
+                    aggregate_stats[elem['subtract']['name']]['total'] += elem['subtract']['total']
+                    aggregate_stats[elem['subtract']['name']]['correct'] += elem['subtract']['correct']
+                    aggregate_stats[elem['subtract']['name']]['own_total'] += elem['total_own_codes']
+                    aggregate_stats[elem['subtract']['name']]['own_correct'] += elem['own_correct']
+
+    # Log detailed stats results
+    flogger.Log(f'Total examples: {detail_total}, orig correct: {detail_orig_correct}, % correct: {detail_orig_correct / detail_total}')
+    flogger.Log(f'Total own codes: {detail_own_total}, correct own codes: {detail_own_correct}, % correct {detail_own_correct / detail_own_total})
+    flogger.Log('Filtering for originally correct examples with at least one permutation with own codes correct...')
+    flogger.Log(f'Permutations total: {permutes_total}, permutations correct: {permutes_correct}, % {permutes_correct / permutes_total}')
+    norm_total = permutes_total - detail_own_total
+    norm_correct = permutes_correct - detail_own_correct
+    flogger.Log(f'Normalized total: {norm_total} normalized correct: {norm_correct}, SIMILARITY: {norm_correct / norm_total}')
+    for key in aggregate_stats.items():
+        _total = aggregate_stats[key]['total']
+        _correct = aggregate_stats[key]['correct']
+        _own_total = aggregate_stats[key]['own_total']
+        _own_correct = aggregate_stats[key]['own_correct']
+        _normalized_total = total - own_total
+        _normalized_correct = correct - own_correct
+        flogger.Log(f'{key}: total: {_total} correct: {_correct} %: {_correct / _total}')
+        flogger.Log(f'{key}: normalized total: {_normalized_total} normalized correct: {_normalized_correct} SIMILARITY: {_normalized_correct / _normalized_total}')
+
     return test_language_similarity
 
 
