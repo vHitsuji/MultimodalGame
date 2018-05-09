@@ -395,13 +395,15 @@ def save_messages_and_stats(correct, incorrect, agent_tag):
     debuglogger.info(f'Messages saved')
 
 
-def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2, logger, flogger):
+def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_group, a2_group, a1_idx, a2_idx, agent_codes_1, agent_codes_2, logger, flogger):
     '''Computes the similarity between two language groups. Can also be used to compute self similarity
     Args:
         agent1: first agent
         agent2: second agent
-        a1_idx: index of first agent in agent_codes_1
-        a2_idx: index of second agent in agent_codes_2
+        a1_group: which group agent 1 belongs to (1 or 2)
+        a2_group: which group agent 2 belongs to (1 or 2)
+        a1_idx: index of first agent in the codes of the agent's group
+        a2_idx: index of second agent in the codes of the agent's group
         agent_codes_1: average codes for each shape and color (from correct, non blank answers) sent by agents in group 1 (one set for each agent)
         agent_codes_2: average codes for each shape and color (from correct, non blank answers) sent by agents in group 2 (one set for each agent)
     '''
@@ -578,7 +580,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             if exchange_args["subtract"] is None or exchange_args["add"] is None:
                                 debuglogger.info(f'Skipping example due to None add or subtract...')
                                 continue
-                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"], change agent: {exchange_args["change_agent"]}')
+                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}, change agent: {exchange_args["change_agent"]}')
 
                             # Set up to play the game and store results for all permutations
                             example_stats = {'subtract': {'name': exchange_args["subtract"], 'total': 0, 'correct': 0},
@@ -604,12 +606,20 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             # First play game with the change agent's own codes
                             own_codes_flag = True
                             debuglogger.debug(f'Playing game with own codes: {own_codes_flag}')
-                            if change_agent = 1:
-                                exchange_args["agent_subtract_dict"] = agent_codes_1[a1_idx]
-                                exchange_args["agent_add_dict"] = agent_codes_1[a1_idx]
+                            if change_agent == 1:
+                                if a1_group == 1:
+                                    exchange_args["agent_subtract_dict"] = agent_codes_1[a1_idx]
+                                    exchange_args["agent_add_dict"] = agent_codes_1[a1_idx]
+                                else:
+                                    exchange_args["agent_subtract_dict"] = agent_codes_2[a1_idx]
+                                    exchange_args["agent_add_dict"] = agent_codes_2[a1_idx]
                             else:
-                                exchange_args["agent_subtract_dict"] = agent_codes_2[a2_idx]
-                                exchange_args["agent_add_dict"] = agent_codes_2[a2_idx]
+                                if a2_group == 1:
+                                    exchange_args["agent_subtract_dict"] = agent_codes_1[a2_idx]
+                                    exchange_args["agent_add_dict"] = agent_codes_1[a2_idx]
+                                else:
+                                    exchange_args["agent_subtract_dict"] = agent_codes_2[a2_idx]
+                                    exchange_args["agent_add_dict"] = agent_codes_2[a2_idx]
 
                             # Play game, corrupting message
                             _s, message_1, message_2, y_all, r = exchange(
@@ -891,9 +901,6 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
         if elem["originally_correct"]:
             detail_orig_correct += 1
             detail_own_total += elem['total_own_codes']
-            if elem['total_own_codes'] != 2:
-                debuglogger.warn(f'Error: {elem["total_own_codes"]} own codes instead of 2')
-                sys.exit()
             if elem['own_correct'] > 0:
                 detail_own_total_filt += elem['total_own_codes']
                 detail_own_correct += elem['own_correct']
@@ -945,7 +952,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
     return test_language_similarity
 
 
-def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, i_batch, in_domain_eval=True, callback=None, store_examples=False, analyze_messages=True, save_messages=False, agent_tag="_", agent_dicts=None, agent_idxs=None):
+def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, i_batch, in_domain_eval=True, callback=None, store_examples=False, analyze_messages=True, save_messages=False, agent_tag="_", agent_dicts=None, agent_idxs=None, agent_groups=None):
     """
     Function computing development accuracy and other metrics
     """
@@ -1300,7 +1307,7 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
 
     test_language_similarity = {}
     if agent_dicts is not None:
-        test_language_similarity = get_similarity(dataset_path, in_domain_eval, agent1, agent2, agent_idxs[0], agent_idxs[1], agent_dicts[0], agent_dicts[1], logger, flogger)
+        test_language_similarity = get_similarity(dataset_path, in_domain_eval, agent1, agent2, agent_groups[0], agent_groups[1], agent_idxs[0], agent_idxs[1], agent_dicts[0], agent_dicts[1], logger, flogger)
         debuglogger.info(f'Total msg changed: {test_language_similarity["total"]}, Correct: {sum(test_language_similarity["correct"])}')
     if store_examples:
         debuglogger.info(f'Finishing iterating through dev set, storing examples...')
@@ -2399,6 +2406,7 @@ def run():
                 code_dicts.append(_)
             # TODO set up for 2 arbitrary groups of agents
             # i.e. need to specify two pools from a group, construct 2 separate code dicts and loop through pairs differently
+            # TODO set up to measure ancestry - both agents from one group, but one set of codes are the ancestor codes
             for i in range(FLAGS.num_agents - 1):
                 flogger.Log("Agent 1: {}".format(i + 1))
                 logger.log(key="Agent 1: ", val=i + 1, step=step)
@@ -2406,10 +2414,10 @@ def run():
                 flogger.Log("Agent 2: {}".format(i + 2))
                 logger.log(key="Agent 2: ", val=i + 2, step=step)
                 agent2 = models_dict["agent" + str(i + 2)]
-                dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts, code_dicts], agent_idxs=[i, i + 1])
+                dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts, code_dicts], agent_idxs=[i, i + 1], agent_groups=[1, 2])
 
         elif FLAGS.agent_communities:
-            eval_community(eval_agent_list, models_dict, dev_accuracy_id[0], logger, flogger, epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag="no_tag")
+            eval_community(eval_agent_list, models_dict, dev_accuracy_id[0], logger, flogger, epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=True, agent_tag="no_tag")
 
         else:
             # For the pairs of agents calculate results
