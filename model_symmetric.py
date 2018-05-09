@@ -578,7 +578,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             if exchange_args["subtract"] is None or exchange_args["add"] is None:
                                 debuglogger.info(f'Skipping example due to None add or subtract...')
                                 continue
-                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}')
+                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"], change agent: {exchange_args["change_agent"]}}')
 
                             # Play game with all pairs of codes
                             example_stats = {'subtract': {'name': exchange_args["subtract"], 'total': 0, 'correct': 0},
@@ -588,14 +588,17 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                              'correct_permutations': 0,
                                              'total_permutations': 0,
                                              'total_own_codes': 0}
-                            
+
                             exchange_args["use_given_who_goes_first"] = True
                             if random.random() < 0.5:
                                 exchange_args["given_who_goes_first"] = 1
-                            else:                               
+                            else:
                                 exchange_args["given_who_goes_first"] = 2
-                            debuglogger.info(f'Given who goes first: {exchange_args["given_who_goes_first"]}')
-                            
+                                # Flip the change agent since the agents receiving the image feats will be flipped
+                                change_agent = 1 if change_agent == 2 else 2
+                                exchange_args["change_agent"] = change_agent
+                            debuglogger.info(f'Given who goes first: {exchange_args["given_who_goes_first"]}, change agent: {exchange_args["change_agent"]}')
+
                             for _g1 in range(len(agent_codes_1)):
                                 for _g2 in range(len(agent_codes_2)):
 
@@ -847,7 +850,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                 flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: {key}: normalized total: {_normalized_total} normalized correct: {_normalized_correct} SIMILARITY: {_normalized_correct / _normalized_total}')
             else:
                 flogger.Log(f'Agents {a1_idx + 1},{a2_idx + 1}: {key}: normalized total: {_normalized_total} normalized correct: {_normalized_correct} SIMILARITY: {0}')
-    
+
     return test_language_similarity
 
 
@@ -1627,7 +1630,7 @@ def exchange(a1, a2, exchange_args):
     who_goes_first = None
     use_given_who_goes_first = exchange_args.get("use_given_who_goes_first", False)
     given_who_goes_first = exchange_args.get("given_who_goes_first", -1)
-    
+
     if FLAGS.randomize_comms:
         if use_given_who_goes_first:
             if given_who_goes_first == -1:
