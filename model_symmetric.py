@@ -578,7 +578,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             if exchange_args["subtract"] is None or exchange_args["add"] is None:
                                 debuglogger.info(f'Skipping example due to None add or subtract...')
                                 continue
-                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"], change agent: {exchange_args["change_agent"]}}')
+                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}, change agent: {exchange_args["change_agent"]}')
 
                             # Play game with all pairs of codes
                             example_stats = {'subtract': {'name': exchange_args["subtract"], 'total': 0, 'correct': 0},
