@@ -398,8 +398,8 @@ def save_messages_and_stats(correct, incorrect, agent_tag):
 def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx, agent_codes_1, agent_codes_2, logger, flogger):
     '''Computes the similarity between two language groups. Can also be used to compute self similarity
     Args:
-        agent1: first agent, from group 1
-        agent2: second agent, from group 2
+        agent1: first agent
+        agent2: second agent
         a1_idx: index of first agent in agent_codes_1
         a2_idx: index of second agent in agent_codes_2
         agent_codes_1: average codes for each shape and color (from correct, non blank answers) sent by agents in group 1 (one set for each agent)
@@ -578,9 +578,9 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                             if exchange_args["subtract"] is None or exchange_args["add"] is None:
                                 debuglogger.info(f'Skipping example due to None add or subtract...')
                                 continue
-                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"]}, change agent: {exchange_args["change_agent"]}')
+                            debuglogger.info(f'i: {_} t: {_t}, subtracting: {exchange_args["subtract"]}, adding: {exchange_args["add"], change agent: {exchange_args["change_agent"]}')
 
-                            # Play game with all pairs of codes
+                            # Set up to play the game and store results for all permutations
                             example_stats = {'subtract': {'name': exchange_args["subtract"], 'total': 0, 'correct': 0},
                                              'add': {'name': exchange_args["add"], 'total': 0, 'correct': 0},
                                              'own_correct': 0,
@@ -589,6 +589,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                              'total_permutations': 0,
                                              'total_own_codes': 0}
 
+                            # Fix who goes first for all permutations in an example
                             exchange_args["use_given_who_goes_first"] = True
                             if random.random() < 0.5:
                                 exchange_args["given_who_goes_first"] = 1
@@ -599,14 +600,104 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_idx, a2_idx,
                                 exchange_args["change_agent"] = change_agent
                             debuglogger.info(f'Given who goes first: {exchange_args["given_who_goes_first"]}, change agent: {exchange_args["change_agent"]}')
 
+                            ''' ==========================================================='''
+                            # First play game with the change agent's own codes
+                            own_codes_flag = True
+                            debuglogger.debug(f'Playing game with own codes: {own_codes_flag}')
+                            if change_agent = 1:
+                                exchange_args["agent_subtract_dict"] = agent_codes_1[a1_idx]
+                                exchange_args["agent_add_dict"] = agent_codes_1[a1_idx]
+                            else:
+                                exchange_args["agent_subtract_dict"] = agent_codes_2[a2_idx]
+                                exchange_args["agent_add_dict"] = agent_codes_2[a2_idx]
+
+                            # Play game, corrupting message
+                            _s, message_1, message_2, y_all, r = exchange(
+                                agent1, agent2, exchange_args)
+
+                            s_masks_1, s_feats_1, s_probs_1 = _s[0]
+                            s_masks_2, s_feats_2, s_probs_2 = _s[1]
+                            feats_1, probs_1 = message_1
+                            feats_2, probs_2 = message_2
+                            y_nc = y_all[0]
+                            y = y_all[1]
+
+                            # We only care about after communication predictions when measuring the peformance
+                            score = None
+                            new_target = torch.zeros(1).fill_(_t).long()
+                            debuglogger.debug(f'Old target: {target[_]}')
+                            na, argmax_y1 = torch.max(y[0][-1], 1)
+                            na, argmax_y2 = torch.max(y[1][-1], 1)
+                            debuglogger.debug(f'y1 logits: {y[0][-1].data}, y2 logits: {y[1][-1].data}')
+                            debuglogger.debug(f'y1: {argmax_y1.data[0]}, y2: {argmax_y2.data[0]}, new_target: {new_target[0]}')
+                            if FLAGS.cuda:
+                                new_target = new_target.cuda()
+                            if change_agent == 1:
+                                # Calculate score for agent 2
+                                (dist_2_change, na, na, na, na, na) = get_classification_loss_and_stats(y[1][-1], new_target)
+                                debuglogger.debug(f'dist: {dist_2_change.data}')
+                                na, na, top_1_2_change = calculate_accuracy(
+                                    dist_2_change, new_target, 1, FLAGS.top_k_dev)
+                                score = top_1_2_change
+                            else:
+                                # Calculate score for agent 1
+                                (dist_1_change, na, na, na, na, na) = get_classification_loss_and_stats(y[0][-1], new_target)
+                                debuglogger.debug(f'dist: {dist_1_change.data}')
+                                na, na, top_1_1_change = calculate_accuracy(
+                                    dist_1_change, new_target, 1, FLAGS.top_k_dev)
+                                score = top_1_1_change
+                            debuglogger.debug(f'i: {_}_{_t}: New caption: {t}, new target: {_t}, change_agent: {change_agent}, correct: {score[0]}, originally correct: {correct_1[_]}/{correct_2[_]}')
+
+                            # Store results
+                            test_language_similarity["total"] += 1
+                            test_language_similarity["orig_shape"].append(s)
+                            test_language_similarity["orig_color"].append(c)
+
+                            if score[0] == 1:
+                                test_language_similarity["correct"].append(1)
+                            else:
+                                test_language_similarity["correct"].append(0)
+                            if change_agent == 2:
+                                # The other agent had their message changed
+                                test_language_similarity["originally_correct"].append(correct_1[_])
+                                test_language_similarity["agent_w_changed_msg"].append(1)
+                            else:
+                                test_language_similarity["originally_correct"].append(correct_2[_])
+                                test_language_similarity["agent_w_changed_msg"].append(2)
+                            if ct != c:
+                                test_language_similarity["shape"].append(None)
+                                test_language_similarity["color"].append(ct)
+                            else:
+                                test_language_similarity["shape"].append(st)
+                                test_language_similarity["color"].append(None)
+
+                            # Track detailed results
+                            example_stats['total_permutations'] += 1
+                            example_stats['subtract']["total"] += 1
+                            example_stats['add']["total"] += 1
+                            if score[0] == 1:
+                                example_stats["subtract"]["correct"] += 1
+                                example_stats["add"]["correct"] += 1
+                                example_stats["correct_permutations"] += 1
+                            if change_agent == 2:
+                                example_stats['originally_correct'] = correct_1[_]
+                            else:
+                                example_stats['originally_correct'] = correct_2[_]
+                            if own_codes_flag:
+                                example_stats['total_own_codes'] += 1
+                                if score[0] == 1:
+                                    example_stats['own_correct'] += 1
+                            ''' ==========================================================='''
+
+                            # Now play the game with all permutations of codes
                             for _g1 in range(len(agent_codes_1)):
                                 for _g2 in range(len(agent_codes_2)):
 
                                     # Track if agent is playing with its own codes
                                     own_codes_flag = False
-                                    if change_agent == 1 and (_g1 == _g2 == a1_idx):
+                                    if FLAGS.self_similarity and (change_agent == 1) and (_g1 == _g2 == a1_idx):
                                         own_codes_flag = True
-                                    elif change_agent == 2 and (_g1 == _g2 == a2_idx):
+                                    elif FLAGS.self_similarity and (change_agent == 2) and (_g1 == _g2 == a2_idx):
                                         own_codes_flag = True
                                     debuglogger.debug(f'Playing game with own codes: {own_codes_flag}')
 
@@ -2966,6 +3057,8 @@ def flags():
     gflags.DEFINE_boolean("eval_xproduct", False, "Whether to evaluate the full cross product of agent pairs")
     gflags.DEFINE_boolean("test_language_similarity", False,
                           "Whether to test language similarity by changing trained agent messages, eval only option")
+    gflags.DEFINE_boolean("self_similarity", False,
+                          "Whether the language similarity being evaluated is with itself")
 
     # Extract Settings
     gflags.DEFINE_boolean("binary_only", False,
