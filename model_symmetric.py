@@ -1619,6 +1619,7 @@ def eval_community(eval_list, models_dict, dev_accuracy_log, logger, flogger, ep
                         (i, j) = elem
                         agent1 = models_dict["agent" + str(i + 1)]
                         agent2 = models_dict["agent" + str(j + 1)]
+                        agent_tag = f'A_{i + 1}_{j + 1}'
                         if i == j:
                             # Create a copy of agents playing with themselves to avoid sharing the hidden state
                             agent2 = Agent(im_feature_type=FLAGS.img_feat,
@@ -1648,6 +1649,7 @@ def eval_community(eval_list, models_dict, dev_accuracy_log, logger, flogger, ep
                     (i, j) = elem
                     agent1 = models_dict["agent" + str(i + 1)]
                     agent2 = models_dict["agent" + str(j + 1)]
+                    agent_tag = f'A_{i + 1}_{j + 1}'
                     if i == j:
                         # Create a copy of agents playing with themselves to avoid sharing the hidden state
                         agent2 = Agent(im_feature_type=FLAGS.img_feat,
@@ -2416,7 +2418,7 @@ def run():
                 agent2 = models_dict["agent" + str(i + 2)]
                 dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts, code_dicts], agent_idxs=[i, i + 1], agent_groups=[1, 2])
 
-        elif FLAGS.agent_communities:
+        elif FLAGS.eval_agent_communities:
             eval_community(eval_agent_list, models_dict, dev_accuracy_id[0], logger, flogger, epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=True, agent_tag="no_tag")
 
         else:
@@ -2431,7 +2433,6 @@ def run():
                 agent2 = models_dict["agent" + str(i + 2)]
                 if i == 0:
                     # Report in domain development accuracy and analyze messages and store examples
-                    # dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=True, analyze_messages=False, save_messages=True, agent_tag=f'eval_only_A_{i + 1}_{i + 2}')
                     dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=True, agent_tag=f'eval_only_A_{i + 1}_{i + 2}')
                 else:
                     # Report in domain development accuracy
@@ -3063,6 +3064,7 @@ def flags():
     gflags.DEFINE_string("log_load", None, "")
     gflags.DEFINE_boolean("eval_only", False, "")
     gflags.DEFINE_boolean("eval_xproduct", False, "Whether to evaluate the full cross product of agent pairs")
+    gflags.DEFINE_boolean("eval_agent_communities", False, "Whether to evaluate on the community evaluation pairs")
     gflags.DEFINE_boolean("test_language_similarity", False,
                           "Whether to test language similarity by changing trained agent messages, eval only option")
     gflags.DEFINE_boolean("self_similarity", False,
