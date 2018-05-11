@@ -3138,6 +3138,8 @@ def flags():
                           "Whether to test language similarity by changing trained agent messages, eval only option")
     gflags.DEFINE_boolean("self_similarity", False,
                           "Whether the language similarity being evaluated is with itself")
+    gflags.DEFINE_boolean("ancestor_similarity", False,
+                          "Whether the language similarity being evaluated is with an ancestor language")
 
     # Extract Settings
     gflags.DEFINE_boolean("binary_only", False,
