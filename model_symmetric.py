@@ -2733,17 +2733,28 @@ def run():
                 total_correct_nc > 0).sum() / float(FLAGS.batch_size)
             atleast1_accuracy_com = (
                 total_correct_com > 0).sum() / float(FLAGS.batch_size)
+
             # Calculate rewards
             # rewards = difference between performance before and after communication
             # Only use top 1
             total_correct_top_1_nc = top_1_1_nc.float() + top_1_2_nc.float()
             total_correct_top_1_com = top_1_1.float() + top_1_2.float()
-            if FLAGS.cooperative_reward:
+            if FLAGS.reward_type == 'cooperative':
                 rewards_1 = (total_correct_top_1_com.float() - total_correct_top_1_nc.float())
                 rewards_2 = rewards_1
-            else:
+            elif FLAGS.reward_type == 'cooperative_nodiff':
+                rewards_1 = total_correct_top_1_com.float()
+                rewards_2 = rewards_1
+            elif FLAGS.reward_type == 'selfish_nodiff':
                 rewards_1 = top_1_1.float()
                 rewards_2 = top_1_2.float()
+            elif FLAGS.reward_type == 'selfish':
+                rewards_1 = top_1_1.float() - top_1_1_nc.float()
+                rewards_2 = top_1_2.float() - top_1_2_nc.float()
+            else:
+                debuglogger.warn(f'Reward type {FLAGS.reward_type} not recognized')
+                sys.exit()
+
             debuglogger.debug(
                 f'total correct top 1 com: {total_correct_top_1_com}')
             debuglogger.debug(
@@ -2752,6 +2763,7 @@ def run():
             debuglogger.debug(f'total correct nc: {total_correct_nc}')
             debuglogger.debug(f'rewards_1: {rewards_1}')
             debuglogger.debug(f'rewards_2: {rewards_2}')
+
             # Store results
             batch_accuracy['agent1_nc'].append(accuracy_1_nc)
             batch_accuracy['agent2_nc'].append(accuracy_2_nc)
@@ -3213,8 +3225,7 @@ def flags():
     gflags.DEFINE_list("agent_supplementary_dicts", ['None', 'None'], "list of paths to extra average message code dictionaries. Used for testing language similarity between an existing and ancestor community")
     gflags.DEFINE_boolean("randomize_comms", False,
                           "Whether to randomize the order in which agents communicate")
-    gflags.DEFINE_boolean("cooperative_reward", False,
-                          "Whether to have a cooperative or individual reward structure")
+    gflags.DEFINE_string("reward_type", "cooperative", "String describing the reward type to train the message channel")
     gflags.DEFINE_boolean("agent_pools", False,
                           "Whether to have a pool of agents to train instead of two fixed agents")
     gflags.DEFINE_integer("num_agents", 2, "How many agents total (single pool or community)")
