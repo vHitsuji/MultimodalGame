@@ -2318,7 +2318,7 @@ def run():
         if not os.path.exists(FLAGS.checkpoint):
             raise Exception("Must provide valid checkpoint.")
 
-        debuglogger.info("Evaluating on in domain validation set")
+        debuglogger.info("Evaluating on validation set")
         step = i_batch = epoch = 0
 
         # Storage for results
@@ -2373,6 +2373,7 @@ def run():
                             agent2.cuda()
                     if i == 0 and j == 0:
                         # Report in domain development accuracy and store examples
+                        # TODO: Store examples currently disabled. To fix store examples - image saving disabled because it clogs the memory and makes everything very slow
                         dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{j + 1}')
                         # Report out of domain development accuracy and store examples
                         dev_accuracy_ood[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_outdomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'Out of Domain Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{j + 1}')
@@ -2438,6 +2439,7 @@ def run():
                     agent2 = models_dict["agent" + str(i + 2)]
                     dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 1])
             else:
+                '''Please note that this is an experimental feature. To be tested further.'''
                 # Testing similarity between two language pairs.
                 # The pairs are assumed to be 2 of the pairs in a checkpointed community
                 # The pairs are specified through FLAGS.compare_language_pairs and are the index into FLAGS.num_agents_per_community
@@ -2477,7 +2479,7 @@ def run():
                     logger.log(key="Agent 2: ", val=i + 2, step=step)
                     agent2 = models_dict["agent" + str(i + 2)]
                     dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 2])
-                # Evaluate on group 1 pairs
+                # Evaluate on group 2 pairs
                 for i in range(g2_bounds[0], g2_bounds[1]):
                     flogger.Log("Agent 1: {}".format(i + 1))
                     logger.log(key="Agent 1: ", val=i + 1, step=step)
