@@ -3237,7 +3237,7 @@ def flags():
     gflags.DEFINE_boolean("agent_communities", False,
                           "Whether to have a community of agents to train instead of two fixed agents")
     gflags.DEFINE_integer("num_communities", 2, "How many communities of agents")
-    gflags.DEFINE_string("community_type", "dense", "Type of agent community: dense or hub_spoke")
+    gflags.DEFINE_string("community_type", "dense", "Type of agent community: dense or chain")
     gflags.DEFINE_list("community_checkpoints", ['None', 'None'], "list of checkpoints per community")
     gflags.DEFINE_boolean("gen_community_messages", False, "")
     gflags.DEFINE_string("community_structure", "55555", "String listing the community structure")
