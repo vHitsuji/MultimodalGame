@@ -2315,10 +2315,10 @@ def run():
 
     # Alternatives to training.
     if FLAGS.eval_only:
-        if not os.path.exists(FLAGS.checkpoint):
+        if (not os.path.exists(FLAGS.checkpoint)) and (FLAGS.community_checkpoints[0] == None):
             raise Exception("Must provide valid checkpoint.")
 
-        debuglogger.info("Evaluating on in domain validation set")
+        debuglogger.info("Evaluating on validation set")
         step = i_batch = epoch = 0
 
         # Storage for results
@@ -2373,6 +2373,7 @@ def run():
                             agent2.cuda()
                     if i == 0 and j == 0:
                         # Report in domain development accuracy and store examples
+                        # TODO: Store examples currently disabled. To fix store examples - image saving disabled because it clogs the memory and makes everything very slow
                         dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{j + 1}')
                         # Report out of domain development accuracy and store examples
                         dev_accuracy_ood[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_outdomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'Out of Domain Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{j + 1}')
@@ -2440,6 +2441,7 @@ def run():
                     agent2 = models_dict["agent" + str(i + 2)]
                     dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 1])
             else:
+                '''Please note that this is an experimental feature. To be tested further.'''
                 # Testing similarity between two language pairs.
                 # The pairs are assumed to be 2 of the pairs in a checkpointed community
                 # The pairs are specified through FLAGS.compare_language_pairs and are the index into FLAGS.num_agents_per_community
@@ -2449,27 +2451,29 @@ def run():
                     _ = pickle.load(open(FLAGS.agent_dicts[i], 'rb'))
                     cd.append(_)
                 # Extract codes for group 1
-                idx = FLAGS.compare_language_pairs[0]
+                idx = int(FLAGS.compare_language_pairs[0])
                 start = end = 0
                 g1_bounds = (None, None)
                 for i, p in enumerate(FLAGS.num_agents_per_community):
-                    end += p
+                    end += int(p)
                     if idx == i:
                         g1_bounds = (start, end)
                         break
-                    start += p
+                    start += int(p)
                 code_dicts.append(cd[start:end])
                 # Extract codes for group 2
-                idx = FLAGS.compare_language_pairs[1]
+                idx = int(FLAGS.compare_language_pairs[1])
                 start = end = 0
-                g1_bounds = (None, None)
+                g2_bounds = (None, None)
                 for i, p in enumerate(FLAGS.num_agents_per_community):
-                    end += p
+                    end += int(p)
                     if idx == i:
                         g2_bounds = (start, end)
                         break
-                    start += p
+                    start += int(p)
                 code_dicts.append(cd[start:end])
+                flogger.Log(f"Comparing groups: {FLAGS.compare_language_pairs}")
+                flogger.Log(f"G1 bounds: {g1_bounds}, G2 bounds: {g2_bounds}")
                 # Evaluate on group 1 pairs
                 for i in range(g1_bounds[0], g1_bounds[1]):
                     flogger.Log("Agent 1: {}".format(i + 1))
@@ -2478,8 +2482,8 @@ def run():
                     flogger.Log("Agent 2: {}".format(i + 2))
                     logger.log(key="Agent 2: ", val=i + 2, step=step)
                     agent2 = models_dict["agent" + str(i + 2)]
-                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 2])
-                # Evaluate on group 1 pairs
+                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 1])
+                # Evaluate on group 2 pairs
                 for i in range(g2_bounds[0], g2_bounds[1]):
                     flogger.Log("Agent 1: {}".format(i + 1))
                     logger.log(key="Agent 1: ", val=i + 1, step=step)
@@ -2487,7 +2491,7 @@ def run():
                     flogger.Log("Agent 2: {}".format(i + 2))
                     logger.log(key="Agent 2: ", val=i + 2, step=step)
                     agent2 = models_dict["agent" + str(i + 2)]
-                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 2])
+                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[2, 2])
 
         elif FLAGS.eval_agent_communities:
             eval_community(eval_agent_list, models_dict, dev_accuracy_id[0], logger, flogger, epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=True, agent_tag="no_tag")
@@ -2735,17 +2739,28 @@ def run():
                 total_correct_nc > 0).sum() / float(FLAGS.batch_size)
             atleast1_accuracy_com = (
                 total_correct_com > 0).sum() / float(FLAGS.batch_size)
+
             # Calculate rewards
             # rewards = difference between performance before and after communication
             # Only use top 1
             total_correct_top_1_nc = top_1_1_nc.float() + top_1_2_nc.float()
             total_correct_top_1_com = top_1_1.float() + top_1_2.float()
-            if FLAGS.cooperative_reward:
+            if FLAGS.reward_type == 'cooperative':
                 rewards_1 = (total_correct_top_1_com.float() - total_correct_top_1_nc.float())
                 rewards_2 = rewards_1
-            else:
+            elif FLAGS.reward_type == 'cooperative_nodiff':
+                rewards_1 = total_correct_top_1_com.float()
+                rewards_2 = rewards_1
+            elif FLAGS.reward_type == 'selfish_nodiff':
                 rewards_1 = top_1_1.float()
                 rewards_2 = top_1_2.float()
+            elif FLAGS.reward_type == 'selfish':
+                rewards_1 = top_1_1.float() - top_1_1_nc.float()
+                rewards_2 = top_1_2.float() - top_1_2_nc.float()
+            else:
+                debuglogger.warn(f'Reward type {FLAGS.reward_type} not recognized')
+                sys.exit()
+
             debuglogger.debug(
                 f'total correct top 1 com: {total_correct_top_1_com}')
             debuglogger.debug(
@@ -2754,6 +2769,7 @@ def run():
             debuglogger.debug(f'total correct nc: {total_correct_nc}')
             debuglogger.debug(f'rewards_1: {rewards_1}')
             debuglogger.debug(f'rewards_2: {rewards_2}')
+
             # Store results
             batch_accuracy['agent1_nc'].append(accuracy_1_nc)
             batch_accuracy['agent2_nc'].append(accuracy_2_nc)
@@ -3215,8 +3231,7 @@ def flags():
     gflags.DEFINE_list("agent_supplementary_dicts", ['None', 'None'], "list of paths to extra average message code dictionaries. Used for testing language similarity between an existing and ancestor community")
     gflags.DEFINE_boolean("randomize_comms", False,
                           "Whether to randomize the order in which agents communicate")
-    gflags.DEFINE_boolean("cooperative_reward", False,
-                          "Whether to have a cooperative or individual reward structure")
+    gflags.DEFINE_string("reward_type", "cooperative", "String describing the reward type to train the message channel")
     gflags.DEFINE_boolean("agent_pools", False,
                           "Whether to have a pool of agents to train instead of two fixed agents")
     gflags.DEFINE_integer("num_agents", 2, "How many agents total (single pool or community)")
@@ -3226,7 +3241,7 @@ def flags():
     gflags.DEFINE_boolean("agent_communities", False,
                           "Whether to have a community of agents to train instead of two fixed agents")
     gflags.DEFINE_integer("num_communities", 2, "How many communities of agents")
-    gflags.DEFINE_string("community_type", "dense", "Type of agent community: dense or hub_spoke")
+    gflags.DEFINE_string("community_type", "dense", "Type of agent community: dense or chain")
     gflags.DEFINE_list("community_checkpoints", ['None', 'None'], "list of checkpoints per community")
     gflags.DEFINE_boolean("gen_community_messages", False, "")
     gflags.DEFINE_string("community_structure", "55555", "String listing the community structure")
