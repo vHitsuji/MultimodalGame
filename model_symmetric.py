@@ -2418,14 +2418,16 @@ def run():
             elif FLAGS.ancestor_similarity:
                 # The main difference vs. the other methods for testing language similarity is that both agents always come from group 1. Only the codes for group 2 are present and used to measure the similarity of the current protocol to an ancestor protocol, as well as to trace the ancestry of individual words.
                 # Load codes for checkpointed agents
+                debuglogger.info(f'Agent codes: {FLAGS.agent_dicts}')
+                debuglogger.info(f'Ancestor codes: {FLAGS.agent_supplementary_dicts}')
+                cd = []
                 for i in range(FLAGS.num_agents):
-                    cd = []
                     _ = pickle.load(open(FLAGS.agent_dicts[i], 'rb'))
                     cd.append(_)
                 code_dicts.append(cd)
                 # Load ancestor codes. The ancestor codes are given through FLAGS.agent_supplementary_dicts
+                cd = []
                 for i in range(FLAGS.num_supplementary_agents):
-                    cd = []
                     _ = pickle.load(open(FLAGS.agent_supplementary_dicts[i], 'rb'))
                     cd.append(_)
                 code_dicts.append(cd)
