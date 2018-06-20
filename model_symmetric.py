@@ -3067,12 +3067,20 @@ def run():
                     dev_accuracy_self_com[i], total_accuracy_com = get_and_log_dev_performance(
                         agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_self_com[i], logger, flogger, "Agent " + str(i + 1) + " self communication: In Domain", epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'self_com_A_{i + 1}')
 
-            # Save model periodically
+            # Save model periodically (overwrites most recent)
             if step >= FLAGS.save_after and step % FLAGS.save_interval == 0:
                 flogger.Log("Checkpointing.")
                 # Optionally store additional information
                 data = dict(step=step, best_dev_acc=best_dev_acc)
                 torch_save(FLAGS.checkpoint, data, models_dict,
+                           optimizers_dict, gpu=0 if FLAGS.cuda else -1)
+
+            # Save separate copy of model every FLAGS.save_distinct_interval steps
+            if step >= FLAGS.save_after and step % FLAGS.save_distinct_interval == 0:
+                flogger.Log(f"Checkpointing a distinct model at {step} steps")
+                # Optionally store additional information
+                data = dict(step=step, best_dev_acc=best_dev_acc)
+                torch_save(FLAGS.checkpoint + "_" + str(step), data, models_dict,
                            optimizers_dict, gpu=0 if FLAGS.cuda else -1)
 
             # Increment batch step
@@ -3140,6 +3148,8 @@ def flags():
                           "Min step (num batches) after which to save")
     gflags.DEFINE_integer(
         "save_interval", 1000, "How often to save after min batches have been reached")
+    gflags.DEFINE_integer(
+        "save_distinct_interval", 50000, "How often to save a distinct model after min batches have been reached")
     gflags.DEFINE_string("checkpoint", None, "Path to save data")
     gflags.DEFINE_string("conf_mat", None, "Path to save confusion matrix")
     gflags.DEFINE_string("log_path", "./logs", "Path to save logs")
