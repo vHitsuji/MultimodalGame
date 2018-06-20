@@ -2315,7 +2315,7 @@ def run():
 
     # Alternatives to training.
     if FLAGS.eval_only:
-        if not os.path.exists(FLAGS.checkpoint):
+        if (not os.path.exists(FLAGS.checkpoint)) and (FLAGS.community_checkpoints[0] == None):
             raise Exception("Must provide valid checkpoint.")
 
         debuglogger.info("Evaluating on validation set")
@@ -2419,14 +2419,16 @@ def run():
             elif FLAGS.ancestor_similarity:
                 # The main difference vs. the other methods for testing language similarity is that both agents always come from group 1. Only the codes for group 2 are present and used to measure the similarity of the current protocol to an ancestor protocol, as well as to trace the ancestry of individual words.
                 # Load codes for checkpointed agents
+                debuglogger.info(f'Agent codes: {FLAGS.agent_dicts}')
+                debuglogger.info(f'Ancestor codes: {FLAGS.agent_supplementary_dicts}')
+                cd = []
                 for i in range(FLAGS.num_agents):
-                    cd = []
                     _ = pickle.load(open(FLAGS.agent_dicts[i], 'rb'))
                     cd.append(_)
                 code_dicts.append(cd)
                 # Load ancestor codes. The ancestor codes are given through FLAGS.agent_supplementary_dicts
+                cd = []
                 for i in range(FLAGS.num_supplementary_agents):
-                    cd = []
                     _ = pickle.load(open(FLAGS.agent_supplementary_dicts[i], 'rb'))
                     cd.append(_)
                 code_dicts.append(cd)
@@ -2449,27 +2451,29 @@ def run():
                     _ = pickle.load(open(FLAGS.agent_dicts[i], 'rb'))
                     cd.append(_)
                 # Extract codes for group 1
-                idx = FLAGS.compare_language_pairs[0]
+                idx = int(FLAGS.compare_language_pairs[0])
                 start = end = 0
                 g1_bounds = (None, None)
                 for i, p in enumerate(FLAGS.num_agents_per_community):
-                    end += p
+                    end += int(p)
                     if idx == i:
                         g1_bounds = (start, end)
                         break
-                    start += p
+                    start += int(p)
                 code_dicts.append(cd[start:end])
                 # Extract codes for group 2
-                idx = FLAGS.compare_language_pairs[1]
+                idx = int(FLAGS.compare_language_pairs[1])
                 start = end = 0
-                g1_bounds = (None, None)
+                g2_bounds = (None, None)
                 for i, p in enumerate(FLAGS.num_agents_per_community):
-                    end += p
+                    end += int(p)
                     if idx == i:
                         g2_bounds = (start, end)
                         break
-                    start += p
+                    start += int(p)
                 code_dicts.append(cd[start:end])
+                flogger.Log(f"Comparing groups: {FLAGS.compare_language_pairs}")
+                flogger.Log(f"G1 bounds: {g1_bounds}, G2 bounds: {g2_bounds}")
                 # Evaluate on group 1 pairs
                 for i in range(g1_bounds[0], g1_bounds[1]):
                     flogger.Log("Agent 1: {}".format(i + 1))
@@ -2478,7 +2482,7 @@ def run():
                     flogger.Log("Agent 2: {}".format(i + 2))
                     logger.log(key="Agent 2: ", val=i + 2, step=step)
                     agent2 = models_dict["agent" + str(i + 2)]
-                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 2])
+                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 1])
                 # Evaluate on group 2 pairs
                 for i in range(g2_bounds[0], g2_bounds[1]):
                     flogger.Log("Agent 1: {}".format(i + 1))
@@ -2487,7 +2491,7 @@ def run():
                     flogger.Log("Agent 2: {}".format(i + 2))
                     logger.log(key="Agent 2: ", val=i + 2, step=step)
                     agent2 = models_dict["agent" + str(i + 2)]
-                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 2])
+                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[2, 2])
 
         elif FLAGS.eval_agent_communities:
             eval_community(eval_agent_list, models_dict, dev_accuracy_id[0], logger, flogger, epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=True, agent_tag="no_tag")
