@@ -2315,7 +2315,7 @@ def run():
 
     # Alternatives to training.
     if FLAGS.eval_only:
-        if (not os.path.exists(FLAGS.checkpoint)) and (FLAGS.community_checkpoints[0] == None):
+        if (not os.path.exists(FLAGS.checkpoint)) and (FLAGS.community_checkpoints[0] is None):
             raise Exception("Must provide valid checkpoint.")
 
         debuglogger.info("Evaluating on validation set")
@@ -2491,7 +2491,7 @@ def run():
                     flogger.Log("Agent 2: {}".format(i + 2))
                     logger.log(key="Agent 2: ", val=i + 2, step=step)
                     agent2 = models_dict["agent" + str(i + 2)]
-                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[2, 2])
+                    dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i - g2_bounds[0], i + 1 - g2_bounds[0]], agent_groups=[2, 2])
 
         elif FLAGS.eval_agent_communities:
             eval_community(eval_agent_list, models_dict, dev_accuracy_id[0], logger, flogger, epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=True, agent_tag="no_tag")
