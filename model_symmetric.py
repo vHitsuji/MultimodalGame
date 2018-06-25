@@ -408,7 +408,7 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_group, a2_gr
         agent_codes_2: average codes for each shape and color (from correct, non blank answers) sent by agents in group 2 (one set for each agent)
     '''
     # Log agent details
-    debuglogger.info('Getting similarity for agents: [{a1_idx}/{a2_idx}], group: [{a1_group}/{a2_group}], length codes: [{len(agent_codes_1)}/{len(agent_codes_2)}]')
+    debuglogger.info(f'Getting similarity for agents: [{a1_idx}/{a2_idx}], group: [{a1_group}/{a2_group}], length codes: [{len(agent_codes_1)}/{len(agent_codes_2)}]')
 
     # Keep track of labels
     true_labels = []
@@ -2478,7 +2478,7 @@ def run():
                 flogger.Log(f"Comparing groups: {FLAGS.compare_language_pairs}")
                 flogger.Log(f"G1 bounds: {g1_bounds}, G2 bounds: {g2_bounds}")
                 # Evaluate on group 1 pairs
-                for i in range(g1_bounds[0], g1_bounds[1]):
+                for i in range(g1_bounds[0], g1_bounds[1] - 1):
                     flogger.Log("Agent 1: {}".format(i + 1))
                     logger.log(key="Agent 1: ", val=i + 1, step=step)
                     agent1 = models_dict["agent" + str(i + 1)]
@@ -2487,7 +2487,7 @@ def run():
                     agent2 = models_dict["agent" + str(i + 2)]
                     dev_accuracy_id[i], total_accuracy_com = get_and_log_dev_performance(agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id[i], logger, flogger, f'In Domain Agents {i + 1},{i + 2}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'eval_only_A_{i + 1}_{i + 2}', agent_dicts=[code_dicts[0], code_dicts[1]], agent_idxs=[i, i + 1], agent_groups=[1, 1])
                 # Evaluate on group 2 pairs
-                for i in range(g2_bounds[0], g2_bounds[1]):
+                for i in range(g2_bounds[0], g2_bounds[1] - 1):
                     flogger.Log("Agent 1: {}".format(i + 1))
                     logger.log(key="Agent 1: ", val=i + 1, step=step)
                     agent1 = models_dict["agent" + str(i + 1)]
