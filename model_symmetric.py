@@ -407,6 +407,9 @@ def get_similarity(dataset_path, in_domain_eval, agent1, agent2, a1_group, a2_gr
         agent_codes_1: average codes for each shape and color (from correct, non blank answers) sent by agents in group 1 (one set for each agent)
         agent_codes_2: average codes for each shape and color (from correct, non blank answers) sent by agents in group 2 (one set for each agent)
     '''
+    # Log agent details
+    debuglogger.info('Getting similarity for agents: [{a1_idx}/{a2_idx}], group: [{a1_group}/{a2_group}], length codes: [{len(agent_codes_1)}/{len(agent_codes_2)}]')
+
     # Keep track of labels
     true_labels = []
     pred_labels_1_nc = []
