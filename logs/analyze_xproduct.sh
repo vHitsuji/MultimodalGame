@@ -1,4 +1,5 @@
 #!/bin/bash
+# Outputs a 2d table containing the in domain accuracy for all possible pairs of agents
 file="$1.log"
 output="$1_xproduct.csv"
 num=$[$2+1]

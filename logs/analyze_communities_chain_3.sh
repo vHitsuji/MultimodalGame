@@ -1,5 +1,5 @@
 #!/bin/bash
-# Outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 3 pools. See lines 23 - 40 for more details on the tracked agents.
+# Outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain structured community containing 5 pools. See lines 25 - 48 for more details on the tracked agents.
 
 file="$1.log"
 output="$1_analysis.csv"
@@ -20,26 +20,59 @@ fi
 # tt - trained together
 # ntt - not trained together
 # frozen - agent playing with a frozen version of itself. Frozen before multi-community training was commenced.
-self_com_1pplus_1="1,1"
-self_com_1pplus_2="10,10"
+
+# Numerical suffixes indicate the pools that the agents were drawn from. One suffix indicates agents are either from the same pool or the second pool could be any other pool. Two suffixes denote the pools the two agents were drawn from.
+self_com_1pplus_1="3,3"
+self_com_1pplus_2="5,5"
 self_com_1pplus_3="10,10"
 self_com_1p_1="na"
-self_com_1p_2="12,12"
-self_com_1p_3="12,12"
-pool_com_tt_1="0,2"
-pool_com_tt_2="12,5"
-pool_com_tt_3="12,5"
+self_com_1p_2="na"
+self_com_1p_3="11,11"
+pool_com_tt_1="3,2"
+pool_com_tt_2="5,7"
+pool_com_tt_3="9,8"
 pool_com_ntt_1="na"
 pool_com_ntt_2="na"
 pool_com_ntt_3="na"
-xpool_com_tt_1="3,10"
-xpool_com_tt_2="8,0"
-xpool_com_tt_3="8,0"
-xpool_com_ntt_1="0,11"
-xpool_com_ntt_2="5,3"
-xpool_com_ntt_3="5,3"
+xpool_com_tt_1_p="na"
+xpool_com_tt_1_n="2,5"
+xpool_com_tt_2_p="7,1"
+xpool_com_tt_2_n="6,9"
+xpool_com_tt_3_p="10,4"
+xpool_com_tt_3_n="na"
+xpool_com_ntt_1_2="0,6"
+xpool_com_ntt_1_3="3,9"
+xpool_com_ntt_2_1="5,1"
+xpool_com_ntt_2_3="6,8"
+xpool_com_ntt_3_1="10,2"
+xpool_com_ntt_3_2="9,5"
 
-declare -a com_types=($self_com_1pplus_1 $self_com_1pplus_2 $self_com_1pplus_3 $self_com_1p_1 $self_com_1p_2 $self_com_1p_3 $pool_com_tt_1 $pool_com_tt_2 $pool_com_tt_3 $pool_com_ntt_1 $pool_com_ntt_2 $pool_com_ntt_3 $xpool_com_tt_1 $xpool_com_tt_2 $xpool_com_tt_3 $xpool_com_ntt_1 $xpool_com_ntt_2 $xpool_com_ntt_3)
+declare -a com_types=(
+$self_com_1pplus_1
+$self_com_1pplus_2
+$self_com_1pplus_3
+$self_com_1p_1
+$self_com_1p_2
+$self_com_1p_3
+$pool_com_tt_1
+$pool_com_tt_2
+$pool_com_tt_3
+$pool_com_ntt_1
+$pool_com_ntt_2
+$pool_com_ntt_3
+$xpool_com_tt_1_p
+$xpool_com_tt_1_n
+$xpool_com_tt_2_p
+$xpool_com_tt_2_n
+$xpool_com_tt_3_p
+$xpool_com_tt_3_n
+$xpool_com_ntt_1_2
+$xpool_com_ntt_1_3
+$xpool_com_ntt_2_1
+$xpool_com_ntt_2_3
+$xpool_com_ntt_3_1
+$xpool_com_ntt_3_2
+)
 
 echo $com_types
 
@@ -73,7 +106,7 @@ cat $file | grep "In Domain, Pool 3" | grep "Development Accuracy, both right, a
 join -t , temp_combined.txt temp.txt > tmp && mv tmp temp_combined.txt
 
 # Build output file
-echo "step,dummy,self_com_1p+_1,self_com_1p+_2,self_com_1p+_3,self_com_1p_1,self_com_1p_2,self_com_1p_3,pool_com_tt_1,pool_com_tt_2,pool_com_tt_3,pool_com_ntt_1,pool_com_ntt_2,pool_com_ntt_3,xpool_com_tt_1,xpool_com_tt_2,xpool_com_tt_3,xpool_com_ntt_1,xpool_com_ntt_2,xpool_com_ntt_3,frozen1,frozen2,frozen3" >> $output
+echo "step,dummy,self_com_1pplus_1,self_com_1pplus_2,self_com_1pplus_3,self_com_1p_1,self_com_1p_2,self_com_1p_3,pool_com_tt_1,pool_com_tt_2,pool_com_tt_3,pool_com_ntt_1,pool_com_ntt_2,pool_com_ntt_3,xpool_com_tt_1_p,xpool_com_tt_1_n,xpool_com_tt_2_p,xpool_com_tt_2_n,xpool_com_tt_3_p,xpool_com_tt_3_n,xpool_com_ntt_1_2,xpool_com_ntt_1_3,xpool_com_ntt_2_1,xpool_com_ntt_2_3,xpool_com_ntt_3_1,xpool_com_ntt_3_2,frozen1,frozen2,frozen3" >> $output
 
 cat temp_combined.txt >> $output
 cat $output

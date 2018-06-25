@@ -1,4 +1,6 @@
 #!/bin/bash
+# Outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 4 pools. See lines 23 - 46 for more details on the tracked agents.
+
 file="$1.log"
 output="$1_analysis.csv"
 echo "Analyzing $file"
@@ -8,6 +10,16 @@ if [ -f $output ]; then
   rm $output
 fi
 
+# Tracked agents - specific pairs are listed in '*_eval_agent_list.pkl' and need to be manually entered. The file is generated automatically when any community is trained. The list is also printed in the log file at the beginning of training.
+# Key
+# self_com - agents evaluated playing against themselves
+# pool_com - agents are from the same original pool (same inital linguistic group)
+# xpool_com - agents are from different original pools (different inital linguistic groups)
+# 1pplus - agent is trained with agents from within its original group and with agents from other groups
+# 1p - agent is only trained with agents from its original group
+# tt - trained together
+# ntt - not trained together
+# frozen - agent playing with a frozen version of itself. Frozen before multi-community training was commenced.
 self_com_1pplus_1="1,1"
 self_com_1pplus_2="10,10"
 self_com_1pplus_3="10,10"
