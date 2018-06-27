@@ -3070,6 +3070,48 @@ def run():
                     dev_accuracy_self_com[i], total_accuracy_com = get_and_log_dev_performance(
                         agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_self_com[i], logger, flogger, "Agent " + str(i + 1) + " self communication: In Domain", epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'self_com_A_{i + 1}')
 
+            # Every 50k steps check if the agents have reached an average accuracy of 75%
+            # If yes, then saved a version
+            if flag.agent_pools or flags.agent_communities:
+                if step > 0 and step % 50000 == 0:
+                    # Only check the first 8 x 8 agents max - otherwise too time consuming
+                    _agent_accuracy = []
+                    for i in range(min(FLAGS.num_agents, 8)):
+                        for j in range(min(FLAGS.num_agents, 8)):
+                            _agent1 = models_dict["agent" + str(i + 1)]
+                            if i == j:
+                                # Create a copy of agents playing with themselves to avoid sharing the hidden state
+                                _agent2 = Agent(im_feature_type=FLAGS.img_feat,
+                                                im_feat_dim=FLAGS.img_feat_dim,
+                                                h_dim=FLAGS.h_dim,
+                                                m_dim=FLAGS.m_dim,
+                                                desc_dim=FLAGS.desc_dim,
+                                                num_classes=FLAGS.num_classes,
+                                                s_dim=FLAGS.s_dim,
+                                                use_binary=FLAGS.use_binary,
+                                                use_attn=FLAGS.visual_attn,
+                                                attn_dim=FLAGS.attn_dim,
+                                                use_MLP=FLAGS.use_MLP,
+                                                cuda=FLAGS.cuda,
+                                                im_from_scratch=FLAGS.improc_from_scratch,
+                                                dropout=FLAGS.dropout)
+                                _agent2.load_state_dict(agent1.state_dict())
+                                if FLAGS.cuda:
+                                    agent2.cuda()
+                            else:
+                                agent2 = models_dict["agent" + str(j + 1)]
+                            dev_accuracy_id_pairs[i], total_accuracy_com = get_and_log_dev_performance(
+                                _agent1, _agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id_pairs[i], logger, flogger, f'Average Check: In Domain: Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'A_{i + 1}_{j + 1}')
+                            _agent_accuracy.append(total_accuracy_com)
+                    _avg_accuracy = np.mean(_agent_accuracy)
+                    flogger.Log(f"Average accuracy: {_avg_accuracy}, Individual accuracies: {_agent_accuracy}")
+                    if _avg_accuracy > 0.75:
+                        flogger.Log(f"Checkpointing a model with {_avg_accuracy} average accuracy at {step} steps")
+                        # Optionally store additional information
+                        data = dict(step=step, best_dev_acc=best_dev_acc)
+                        torch_save(FLAGS.checkpoint + "_{0:.4f}".format(_avg_accuracy), data, models_dict,
+                                   optimizers_dict, gpu=0 if FLAGS.cuda else -1)
+
             # Save model periodically (overwrites most recent)
             if step >= FLAGS.save_after and step % FLAGS.save_interval == 0:
                 flogger.Log("Checkpointing.")
