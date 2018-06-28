@@ -3070,10 +3070,10 @@ def run():
                     dev_accuracy_self_com[i], total_accuracy_com = get_and_log_dev_performance(
                         agent1, agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_self_com[i], logger, flogger, "Agent " + str(i + 1) + " self communication: In Domain", epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'self_com_A_{i + 1}')
 
-            # Every 40k steps check if the agents have reached an average accuracy of 75%
+            # Every FLAGS.check_accuracy_interval steps check if the agents have reached an average accuracy of 75%
             # If yes, then saved a version
             if FLAGS.agent_pools or FLAGS.agent_communities:
-                if step > 0 and step % 40000 == 0:
+                if step > 0 and (step % FLAGS.check_accuracy_interval == 0):
                     # Only check the first 8 x 8 agents max - otherwise too time consuming
                     _agent_accuracy = []
                     for i in range(min(FLAGS.num_agents, 8)):
@@ -3197,6 +3197,8 @@ def flags():
         "save_interval", 1000, "How often to save after min batches have been reached")
     gflags.DEFINE_integer(
         "save_distinct_interval", 50000, "How often to save a distinct model after min batches have been reached")
+    gflags.DEFINE_integer(
+        "check_accuracy_interval", 25000, "How often to check if the accuracy has reached 75%")
     gflags.DEFINE_string("checkpoint", None, "Path to save data")
     gflags.DEFINE_string("conf_mat", None, "Path to save confusion matrix")
     gflags.DEFINE_string("log_path", "./logs", "Path to save logs")
