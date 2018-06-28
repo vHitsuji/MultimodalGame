@@ -3104,14 +3104,14 @@ def run():
                                 _agent1, _agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id_pairs[i], logger, flogger, f'Average Check: In Domain: Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'A_{i + 1}_{j + 1}')
                             _agent_accuracy.append(total_accuracy_com)
                     _avg_accuracy = np.mean(_agent_accuracy)
-                    flogger.Log(f"Average accuracy: {_avg_accuracy}, Individual accuracies: {_agent_accuracy}")
+                    flogger.Log(f"Step {step}: Average accuracy: {_avg_accuracy}, Individual accuracies: {_agent_accuracy}")
                     if _avg_accuracy > 0.75:
                         flogger.Log(f"Checkpointing a model with {_avg_accuracy} average accuracy at {step} steps")
                         # Optionally store additional information
                         data = dict(step=step, best_dev_acc=best_dev_acc)
                         torch_save(FLAGS.checkpoint + "_{0:.4f}".format(_avg_accuracy), data, models_dict,
                                    optimizers_dict, gpu=0 if FLAGS.cuda else -1)
-                        flogger.Log("Accuracy reached at least 75% on average, stopping training...")
+                        flogger.Log(f"Accuracy reached at least 75% on average, stopping training at step {step}...")
                         sys.exit()
 
             # Save model periodically (overwrites most recent)
