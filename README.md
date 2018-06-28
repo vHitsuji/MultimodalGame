@@ -1,6 +1,6 @@
 # MultimodalGame
 
-This is a framework for studying multi-agent emergent communication It enables a user to investigate the cultural and communicative aspects of a linguistic community of trainable agents based on deep learning and reinforcement learning
+This is a framework for studying multi-agent emergent communication.
 
 ## Installation
 
@@ -12,13 +12,22 @@ pip install -e ShapeWorld
 
 ## Dependencies
 
-# TODO update
+**TODO update**
 
 You can install the dependencies using pip: `pip install -r requirements.txt` or install them manually.
 
-## Building the Datasets
+## Training data
 
-This model used ShapeWorld datasets. All the datasets used in this project are available [here](**TODO**)
+This model used ShapeWorld datasets. All the datasets used in this project are available [here](**TODO**).
+
+- **oneshape**: training dataset, 5k examples
+- **oneshape_valid**: in domain evaluation dataset, same distribution as training set, 1k examples
+- **oneshape_valid_large**: larger in domain evaluation dataset, same distribution as training set, 5k examples
+- **oneshape_valid_all_combos**: out of domain evaluation dataset, contains all of the combinations in the training dataset + 6 held out shape-color combinations. All shapes and colors are contained in the training data, but 6 shape-color combinations are new. 5k examples
+
+See example training and evaluation scripts below for more details of how to use these datasets.
+
+### Building the datasets
 
 To generate an example dataset run the following command. This generates 5000 examples and is equivalent to the training dataset "oneshape" used for this project, available [here](**TODO**).
 
@@ -35,7 +44,7 @@ The models also depends on pretrained word embeddings. We recommend using the `6
 
 ShapeWorld is a framework which allows to specify generators for abstract, visually grounded language data (or just visual data).
 
-It was written by *Alexander Kuhnle and Ann Copestake* (April 2017) and adapted by Laura Graesser for this project.
+It was written by *Alexander Kuhnle and Ann Copestake* (April 2017) and adapted by *Laura Graesser* for this project.
 
 If you use ShapeWorld in your work, please cite:
 
