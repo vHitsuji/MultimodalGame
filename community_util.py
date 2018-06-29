@@ -51,7 +51,7 @@ def build_train_matrix(pools_num, community_type, intra_pool_connect_p, inter_po
     inter_train_matrix = np.zeros((total_agents, total_agents))
     train_matrix = np.zeros((total_agents, total_agents))
     if community_type == "hub_spoke":
-        debuglogger.warn(f'Hub and spoke model not implemented yet, select "dense"')
+        debuglogger.warn(f'Hub and spoke model not implemented yet, select "dense" or "chain"')
         sys.exit()
     elif community_type == "dense" or community_type == "chain":
         debuglogger.info(f'Building a {community_type} community with {total_agents} agents organized into {len(pools_num)} groups with {pools_num} agents')
@@ -135,7 +135,7 @@ def build_train_matrix(pools_num, community_type, intra_pool_connect_p, inter_po
                 agent_idx_list.append((i, j))
         debuglogger.info(f'Agent idx list: {agent_idx_list}')
     else:
-        debuglogger.warn(f'Invalid community type, please select "dense" or "hub_spoke"')
+        debuglogger.warn(f'Invalid community type, please select "dense" or "chain"')
         sys.exit()
     return (train_vec_prob, agent_idx_list)
 
