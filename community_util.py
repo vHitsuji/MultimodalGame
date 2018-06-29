@@ -1,3 +1,9 @@
+'''
+Utility functions for setting up agent communities. There are two main roles:
+    1. Building the agent community connectivity graph and transforming this into a probability distribution for sampling pairs of agents to train
+    2. Generating the set of evaluation pairs to periodically track different types of agent performance
+'''
+
 import os
 import sys
 import numpy as np
@@ -280,6 +286,7 @@ def build_eval_list(pools_num, community_type, train_vec_prob):
     debuglogger.info(f'Eval agent combinations: {agent_idxs}')
     return agent_idxs
 
+
 def get_msg_pairs(community_structure):
     agent_pairs = []
     if community_structure == "55555":
@@ -291,7 +298,7 @@ def get_msg_pairs(community_structure):
     elif community_structure == "333710":
         agent_pairs = [(0, 1), (0, 3), (0, 6), (0, 9), (0, 16), (3, 4), (3, 6), (3, 9), (3, 16), (6, 7), (6, 9), (6, 16), (9, 10), (9, 16), (16, 17)]
     else:
-        print("ERROR: no agent pairs specified for " + community_structure) 
+        print("ERROR: no agent pairs specified for " + community_structure)
         sys.exit()
     return agent_pairs
 
