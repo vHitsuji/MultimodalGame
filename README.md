@@ -42,6 +42,8 @@ pip install -e ShapeWorld
 - python-gflags
 - tqdm
 - scikit-image
+- sklearn
+- tensorflow
 
 <a name="data"></a>
 ## Training data
