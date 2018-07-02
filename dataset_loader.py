@@ -376,8 +376,8 @@ if __name__ == "__main__":
     gflags.DEFINE_integer("image_size", 128, "Width and height in pixels of the images to give to the agents")
     FLAGS(sys.argv)
 
-    data_path = './data/oneshape_simple_textselect'
-    embed_path = './glove.6B/glove.6B.100d.txt'
+    data_path = '/path/to/data/oneshape_simple_textselect'
+    embed_path = '/path/to/embeddingd/glove-100d.txt'
     mode = 'train'
     size = 100
     ds_type = 'agreement'
@@ -394,8 +394,10 @@ if __name__ == "__main__":
         save_image(batch['masked_im_1'], data_path + '/example_ims_1_' + str(i_batch) + '.png', pad_value=0.5)
         save_image(batch['masked_im_2'], data_path + '/example_ims_2_' + str(i_batch) + '.png', pad_value=0.5)
         print(f'Batch: {i_batch}, non blank partition: {batch["non_blank_partition"]}')
+        # Save individual images
         for i in range(batch_size):
             print(f'Batch: {i_batch}, i: {i}, Caption: {batch["caption_str"][i]}, shape: {batch["shapes"][i]}, colors: {batch["colors"][i]}')
             print(f'Batch: {i_batch}, i: {i}, Texts: {batch["texts_str"][i]}, shape: {batch["texts_shapes"][i]}, colors: {batch["texts_colors"][i]}')
-        if i_batch == 5:
-            break
+            save_image(batch['masked_im_1'][i], f'{data_path}/example_ims_1_{i_batch}_{i}.png', pad_value=0.5)
+            save_image(batch['masked_im_1'][i], f'{data_path}/example_ims_2_{i_batch}_{i}.png', pad_value=0.5)
+        break
