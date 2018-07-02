@@ -17,7 +17,8 @@ This is a framework for studying multi-agent emergent communication.
     3.5. [Generating messages](#messages)  
     3.6. [Helpful bash scripts to analyze log files](#bash)
 
-## Installation <a name="installation"></a>
+<a name="installation"></a>
+## Installation
 
 Note: this assumes you are using the Anaconda package and environment manager. To install Anaconda see [here](https://conda.io/docs/user-guide/install/index.html).
 
@@ -42,7 +43,8 @@ pip install -e ShapeWorld
 - tqdm
 - scikit-image
 
-## Training data <a name="data"></a>
+<a name="data"></a>
+## Training data
 
 This model used ShapeWorld datasets. All the datasets used in this project are available [here](**TODO**).
 
@@ -53,7 +55,8 @@ This model used ShapeWorld datasets. All the datasets used in this project are a
 
 See example training and evaluation scripts below for more details of how to use these datasets.
 
-### Building the datasets <a name="builddata"></a>
+<a name="builddata"></a>
+### Building the datasets
 
 To generate an example dataset run the following command. This generates 5000 examples and is equivalent to the training dataset "oneshape" used for this project, available [here](**TODO**).
 
@@ -66,7 +69,8 @@ cd ..
 
 The models also depend on pre-trained word embeddings. We recommend using the `6B.100d` GloVe embeddings available [here](https://nlp.stanford.edu/projects/glove/).
 
-### About ShapeWorld <a name="aboutshapeworld"></a>
+<a name="aboutshapeworld"></a>
+### About ShapeWorld
 
 ShapeWorld is a framework which allows to specify generators for abstract, visually grounded language data (or just visual data).
 
@@ -79,7 +83,8 @@ If you use ShapeWorld in your work, please cite:
 
 For more details, please see the [original repository](https://github.com/AlexKuhnle/ShapeWorld)
 
-### Example Data <a name="exampledata"></a>
+<a name="exampledata"></a>
+### Example Data
 
 **Images**
 ![ims](./readme_figs/example_ims_orig.png)
@@ -109,7 +114,8 @@ For more details, please see the [original repository](https://github.com/AlexKu
 - ['there is a pentagon .  ', 'there is a blue rectangle . ', 'there is a gray pentagon . ', 'there is a magenta shape . ', 'there is a cyan shape . ', 'there is a red rectangle . ', 'there is a yellow triangle . ', 'there is a green ellipse . ', 'there is a magenta ellipse . ', 'there is a magenta shape . ']
 - ['there is an ellipse .  ', 'there is a red semicircle . ', 'there is a magenta circle . ', 'there is a gray shape . ', 'there is a pentagon .  ', 'there is a red shape . ', 'there is a gray shape . ', 'there is a blue shape . ', 'there is a green shape . ', 'there is a cyan shape . ']
 
-## Training agents <a name="training"></a>
+<a name="training"></a>
+## Training agents
 
 Agents can be trained in three configurations.
 1. One pair of two agents - the most simple case
@@ -131,7 +137,8 @@ MultimodalGame
 --> glove  
 ---->  glove-100d.txt
 
-### Basic case <a name="basic"></a>
+<a name="basic"></a>
+### Basic case
 
 This trains a pair of agents. See also `./run_scripts/basic.sh`
 
@@ -172,7 +179,8 @@ python model_symmetric.py
     -random_seed 17
 ```
 
-### Agent Pools <a name="pools"></a>
+<a name="pools"></a>
+### Agent Pools
 
 This trains a pool of 8 agents. For agent pools of 3 or more agents, training is stopped when the average accuracy between any pair of agents reaches 75%. See also `./run_scripts/train_pool8.sh`.
 
@@ -217,7 +225,8 @@ python model_symmetric.py
     -check_accuracy_interval 30000 # How often (in training steps) to check if the average accuracy between any pair of agents has reach 75%.
 ```
 
-### Agent Communities <a name="communities"></a>
+<a name="communities"></a>
+### Agent Communities
 
 This trains a community of 5 pools of 5, 5, 10, 5, and 5 agents in a chain structure. For agent pools of 3 or more agents. See also `./run_scripts/train_community_chain_551055.sh`.
 
@@ -269,7 +278,8 @@ python model_symmetric.py
     -intra_inter_ratio 1.0  # Ratio of the proportion of training given to agents from the same pool to agents from different pools. 1.0 = 50% / 50% - equal proportion of training given to each. 2.0 = 67% / 33%, agents from the same pool are trained 2x agents across pools. 0.5 = 33% / 67%, agents from different pools are trained 2x agents from the same pool.
 ```
 
-## Evaluating agents <a name="eval"></a>
+<a name="eval"></a>
+## Evaluating agents
 
 This evaluates a pool of 10 agents by taking all possible pairs of agents and evaluating them on the in domain and out of domain dev sets. See also `./run_scripts/eval_pool10.sh`.
 
@@ -317,7 +327,8 @@ python model_symmetric.py
     -checkpoint ./models/pool10_1.pt # Model to evaluate
 ```
 
-## Generating messages <a name="messages"></a>
+<a name="messages"></a>
+## Generating messages
 
 This evaluates a pool of 10 agents by taking all possible pairs of agents and evaluating them on the in domain and out of domain dev sets. See also `./run_scripts/eval_pool10.sh`.
 
@@ -364,7 +375,8 @@ python model_symmetric.py
     -checkpoint ./models/pool10_1.pt # Model to evaluate
 ```
 
-## Analyzing log files <a name="bash"></a>
+<a name="bash"></a>
+## Analyzing log files
 
 These files extract different types of tracked data from either the training or eval log files. See the comments in the bash scripts for usage and more details.
 
