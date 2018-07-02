@@ -4,3 +4,4 @@ numpy
 python-gflags
 tqdm
 scikit-image
+tensorflow
