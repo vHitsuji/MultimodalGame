@@ -46,7 +46,7 @@ pip install -e ShapeWorld
 <a name="data"></a>
 ## Training data
 
-This model used ShapeWorld datasets. All the datasets used in this project are available [here](**TODO**).
+This model used ShapeWorld datasets. All the datasets used in this project are available [here](https://drive.google.com/drive/folders/1p0GtLX_Y_w78zWoc9Qe8jFPniLOtkr1E?usp=sharing).
 
 - **oneshape**: training dataset, 5k examples
 - **oneshape_valid**: in domain evaluation dataset, same distribution as training set, 1k examples
@@ -58,7 +58,7 @@ See example training and evaluation scripts below for more details of how to use
 <a name="builddata"></a>
 ### Building the datasets
 
-To generate an example dataset run the following command. This generates 5000 examples and is equivalent to the training dataset "oneshape" used for this project, available [here](**TODO**).
+To generate an example dataset run the following command. This generates 5000 examples and is equivalent to the training dataset "oneshape" used for this project, available [here](https://drive.google.com/drive/folders/1p0GtLX_Y_w78zWoc9Qe8jFPniLOtkr1E?usp=sharing).
 
 ```
 mkdir data
