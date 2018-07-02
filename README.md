@@ -58,7 +58,7 @@ See example training and evaluation scripts below for more details of how to use
 <a name="builddata"></a>
 ### Building the datasets
 
-To generate an example dataset run the following command. This generates 5000 examples and is equivalent to the training dataset "oneshape" used for this project, available [here](https://drive.google.com/drive/folders/1p0GtLX_Y_w78zWoc9Qe8jFPniLOtkr1E?usp=sharing).
+To generate an example dataset run the following command. This generates 500 examples and is the same format as the training dataset "oneshape" used for this project, available [here](https://drive.google.com/drive/folders/1p0GtLX_Y_w78zWoc9Qe8jFPniLOtkr1E?usp=sharing).
 
 ```
 mkdir data
@@ -330,7 +330,7 @@ python model_symmetric.py
 <a name="messages"></a>
 ## Generating messages
 
-This evaluates a pool of 10 agents by taking all possible pairs of agents and evaluating them on the in domain and out of domain dev sets. See also `./run_scripts/eval_gen_msg_pool10.sh`.
+This generates and saves messages for all agents. Agents are evaluated on the in domain dev set and all of the messages they send to each other are stored in a .pkl file. Messages are generated for pairs of agents and suffixed with the pair of agents in question. See also `./run_scripts/eval_gen_msg_pool10.sh`.
 
 ```bash
 python model_symmetric.py
@@ -388,3 +388,4 @@ These files extract different types of tracked data from either the training or 
 - `./logs/analyze_dense_3.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 3 pools.
 - `./logs/analyze_dense_4.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 4 pools.
 - `./logs/analyze_dense_5.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 5 pools.
+- `analyze_messages.py`: analyzes messages from a pair of agents. The correct format of input file is a .pkl file. See [Generating messages](#messages) for more details.
