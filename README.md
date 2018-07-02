@@ -330,7 +330,7 @@ python model_symmetric.py
 <a name="messages"></a>
 ## Generating messages
 
-This evaluates a pool of 10 agents by taking all possible pairs of agents and evaluating them on the in domain and out of domain dev sets. See also `./run_scripts/eval_pool10.sh`.
+This evaluates a pool of 10 agents by taking all possible pairs of agents and evaluating them on the in domain and out of domain dev sets. See also `./run_scripts/eval_gen_msg_pool10.sh`.
 
 ```bash
 python model_symmetric.py
