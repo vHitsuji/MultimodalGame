@@ -399,5 +399,5 @@ if __name__ == "__main__":
             print(f'Batch: {i_batch}, i: {i}, Caption: {batch["caption_str"][i]}, shape: {batch["shapes"][i]}, colors: {batch["colors"][i]}')
             print(f'Batch: {i_batch}, i: {i}, Texts: {batch["texts_str"][i]}, shape: {batch["texts_shapes"][i]}, colors: {batch["texts_colors"][i]}')
             save_image(batch['masked_im_1'][i], f'{data_path}/example_ims_1_{i_batch}_{i}.png', pad_value=0.5)
-            save_image(batch['masked_im_1'][i], f'{data_path}/example_ims_2_{i_batch}_{i}.png', pad_value=0.5)
+            save_image(batch['masked_im_2'][i], f'{data_path}/example_ims_2_{i_batch}_{i}.png', pad_value=0.5)
         break
