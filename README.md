@@ -14,7 +14,7 @@ This is a framework for studying multi-agent emergent communication.
     3.2. [Agent pools](#pools)  
     3.3. [Agent communities](#communities)  
     3.4. [Evaluating agents](#eval)  
-    3.5. [Generating messages](#messages)
+    3.5. [Generating messages](#messages)  
     3.6. [Helpful bash scripts to analyze log files](#bash)
 
 ## Installation <a name="installation"></a>
@@ -368,11 +368,11 @@ python model_symmetric.py
 
 These files extract different types of tracked data from either the training or eval log files. See the comments in the bash scripts for usage and more details.
 
-- `analyze_xproduct.sh`: outputs a 2d table of the in domain accuracy for all pairs of agents
-- `analyze_communities.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a community containing 2 pools.
-- `analyze_communities_chain_3.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 3 pools.
-- `analyze_communities_chain_4.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 4 pools.
-- `analyze_communities_chain_5.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 5 pools.
-- `analyze_dense_3.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 3 pools.
-- `analyze_dense_4.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 4 pools.
-- `analyze_dense_5.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 5 pools.
+- `./logs/analyze_xproduct.sh`: outputs a 2d table of the in domain accuracy for all pairs of agents
+- `./logs/analyze_communities.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a community containing 2 pools.
+- `./logs/analyze_communities_chain_3.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 3 pools.
+- `./logs/analyze_communities_chain_4.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 4 pools.
+- `./logs/analyze_communities_chain_5.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 5 pools.
+- `./logs/analyze_dense_3.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 3 pools.
+- `./logs/analyze_dense_4.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 4 pools.
+- `./logs/analyze_dense_5.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a dense community containing 5 pools.
