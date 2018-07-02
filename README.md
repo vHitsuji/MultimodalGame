@@ -126,7 +126,7 @@ Agents can be trained in three configurations.
     - e.g. 5 pools, with indices 1, 2, 3, 4, 5. Agents in pool 1 are connected only to agents in pool 2, where as agents in pool 2 are connected to agents in pool 1 and 3.
 
 
-Note: these examples assume that you have downloaded the data from [here](todo) and have organized it using the following file structure.
+Note: these examples assume that you have downloaded the data from [here](https://drive.google.com/drive/folders/1p0GtLX_Y_w78zWoc9Qe8jFPniLOtkr1E?usp=sharing) and have organized it using the following file structure.
 
 MultimodalGame  
 --> data  
