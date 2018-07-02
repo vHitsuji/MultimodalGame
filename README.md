@@ -28,7 +28,7 @@ cd MultimodalGame
 # Install dependencies
 conda create --name emergent_comms
 source activate emergent_comms
-conda conda install pytorch torchvision -c pytorch
+conda install pytorch torchvision -c pytorch
 pip install -r requirements.txt
 # Install ShapeWorld
 pip install -e ShapeWorld
