@@ -377,7 +377,7 @@ if __name__ == "__main__":
     FLAGS(sys.argv)
 
     data_path = '/path/to/data/oneshape_simple_textselect'
-    embed_path = '/path/to/embeddingd/glove-100d.txt'
+    embed_path = '/path/to/embedding/glove-100d.txt'
     mode = 'train'
     size = 100
     ds_type = 'agreement'
