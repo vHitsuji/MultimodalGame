@@ -184,7 +184,7 @@ python model_symmetric.py
 <a name="pools"></a>
 ### Agent Pools
 
-This trains a pool of 8 agents. For agent pools of 3 or more agents, training is stopped when the average accuracy between any pair of agents reaches 75%. See also `./run_scripts/train_pool8.sh`.
+This trains a pool of 8 agents. For agent pools of 3 or more agents, training is stopped when the accuracy between all pair of agents reaches 75% on average. See also `./run_scripts/train_pool8.sh`.
 
 ```bash
 python model_symmetric.py
@@ -230,7 +230,7 @@ python model_symmetric.py
 <a name="communities"></a>
 ### Agent Communities
 
-This trains a community of 5 pools of 5, 5, 10, 5, and 5 agents in a chain structure. For agent pools of 3 or more agents. See also `./run_scripts/train_community_chain_551055.sh`.
+This trains a community of 5 pools of 5, 5, 10, 5, and 5 agents in a chain structure. See also `./run_scripts/train_community_chain_551055.sh`.
 
 ```bash
 python model_symmetric.py
