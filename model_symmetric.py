@@ -24,16 +24,18 @@ from torchvision.utils import save_image
 
 from sklearn.metrics import confusion_matrix
 
-from misc import recursively_set_device, torch_save, torch_load, torch_load_communities
-from misc import VisdomLogger as Logger
-from misc import FileLogger
-from misc import read_log_load
-from misc import xavier_normal
-from misc import build_mask
-
 from agents import Agent
+from analyze_messages import convert_tensor_to_string
 from dataset_loader import load_shapeworld_dataset
 from community_util import sample_agents, build_train_matrix, build_eval_list, get_msg_pairs
+
+from misc import build_mask
+from misc import calculate_entropy
+from misc import read_log_load
+from misc import recursively_set_device, torch_save, torch_load, torch_load_communities
+from misc import FileLogger
+from misc import VisdomLogger as Logger
+from misc import xavier_normal
 
 import gflags
 FLAGS = gflags.FLAGS
