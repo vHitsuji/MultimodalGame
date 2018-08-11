@@ -312,7 +312,7 @@ class RewardEstimator(nn.Module):
         reset_parameters_util(self)
 
     def forward(self, x):
-        # Detach input from rest of graph - only want gradients to flow through the RewardEstimator and no future
+        # Detach input from rest of graph - only want gradients to flow through the RewardEstimator and no further
         x = x.detach()
         x = F.relu(self.v1(x))
         x = self.v2(x)
