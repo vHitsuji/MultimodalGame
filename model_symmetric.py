@@ -11,14 +11,14 @@ import logging
 import pickle
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from torch.autograd import Variable as _Variable
+import torch.nn.functional as F
+import torch.nn as nn
 import torch.optim as optim
 from torch.nn.parameter import Parameter
 
-import torchvision.models as models
 import torchvision.datasets as dset
+import torchvision.models as models
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
 
