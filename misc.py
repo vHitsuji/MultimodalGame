@@ -469,9 +469,13 @@ def build_mask(region_str, size):
     return mask
 
 
+def log2(p):
+    return torch.log(p) / torch.log(torch.zeros(1).fill_(2))
+
+
 def calculate_entropy(p):
     ''' Calculates the entropy of an n-dimensional binary variable'''
-    H = - (torch.log2(p) * p).sum() - (torch.log2(1 - p) * (1 - p)).sum()
+    H = - (log2(p) * p).sum() - (log2(1 - p) * (1 - p)).sum()
     if np.isnan(H):
         debuglogger.warn(f'NAN entropy for {p}')
         return None
