@@ -1279,7 +1279,7 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
                     shapes_colors_accuracy[sc]["correct"] += 1
             # Time consuming, so only do this if necessary
             if store_examples or analyze_messages or save_messages or FLAGS.report_on_complexity:
-                # Store batch data to analyze
+                debuglogger.info("Storing message data to analyze later...")
                 if correct_indices_com[_i]:
                     correct_to_analyze = add_data_point(batch, _i, correct_to_analyze, feats_1, feats_2, probs_1, probs_2)
                 else:
