@@ -326,7 +326,7 @@ def run_analyze_messages(data, data_type, logger, flogger, epoch, step, i_batch)
 
 def add_data_point(batch, i, data_store, messages_1, messages_2, probs_1, probs_2):
     '''Adds the relevant data from a batch to a data store to analyze later'''
-    # Storing images creates a huge slowdown
+    # Storing images creates a huge slowdown and no need to store them
     # data_store["masked_im_1"].append(batch["masked_im_1"][i])
     # data_store["masked_im_2"].append(batch["masked_im_2"][i])
     data_store["p"].append(batch["p"][i])
@@ -335,21 +335,41 @@ def add_data_point(batch, i, data_store, messages_1, messages_2, probs_1, probs_
     data_store["shapes"].append(batch["shapes"][i])
     data_store["colors"].append(batch["colors"][i])
     data_store["texts"].append(batch["texts_str"][i])
-    # Add messages and probs from each exchange
-    m_1 = []
-    p_1 = []
+    # Add messages, probs and entropy from each exchange
+    m_1 = []  # message
+    p_1 = []  # message probability
+    m_1_ent = []  # entropy per message
+    m_1_str = []  # message as a string
+    # TODO CHECK zip
     for exchange, prob in zip(messages_1, probs_1):
-        m_1.append(exchange[i].data.cpu())
-        p_1.append(prob[i].data.cpu())
+        print(f'exchange: {exchange}, prob: {prob}')
+        m = exchange[i].data.cpu()
+        p = prob[i].data.cpu()
+        m_1.append(m)
+        p_1.append(p)
+        m_1_ent.append(calculate_entropy(p))
+        m_1_str.append(convert_tensor_to_string(m))
+        print(f'message data: {m_1}, {p_1}, {m_1_ent}, {m_1_str}')
+        sys.exit()
     data_store["msg_1"].append(m_1)
     data_store["probs_1"].append(p_1)
-    m_2 = []
-    p_2 = []
+    data_store["msg_1_str"].append(m_1_str)
+    data_store["msg_1_ent"].append(m_1_ent)
+    m_2 = []  # message
+    p_2 = []  # message probability
+    m_2_ent = []  # entropy per message
+    m_2_str = []  # message as a string
     for exchange, prob in zip(messages_2, probs_2):
-        m_2.append(exchange[i].data.cpu())
-        p_2.append(prob[i].data.cpu())
+        m = exchange[i].data.cpu()
+        p = prob[i].data.cpu()
+        m_2.append(m)
+        p_2.append(p)
+        m_2_ent.append(calculate_entropy(p))
+        m_2_str.append(convert_tensor_to_string(m))
     data_store["msg_2"].append(m_2)
     data_store["probs_2"].append(p_2)
+    data_store["msg_2_str"].append(m_2_str)
+    data_store["msg_2_ent"].append(m_2_ent)
     return data_store
 
 
@@ -966,7 +986,11 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     correct_to_analyze = {"masked_im_1": [],
                           "masked_im_2": [],
                           "msg_1": [],
+                          "msg_1_ent": [],
+                          "msg_1_str": [],
                           "msg_2": [],
+                          "msg_2_ent": [],
+                          "msg_2_str": [],
                           "probs_1": [],
                           "probs_2": [],
                           "p": [],
@@ -979,7 +1003,11 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     incorrect_to_analyze = {"masked_im_1": [],
                             "masked_im_2": [],
                             "msg_1": [],
+                            "msg_1_ent": [],
+                            "msg_1_str": [],
                             "msg_2": [],
+                            "msg_2_ent": [],
+                            "msg_2_str": [],
                             "probs_1": [],
                             "probs_2": [],
                             "p": [],
@@ -1250,7 +1278,7 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
                 if correct_indices_com[_i]:
                     shapes_colors_accuracy[sc]["correct"] += 1
             # Time consuming, so only do this if necessary
-            if store_examples or analyze_messages or save_messages:
+            if store_examples or analyze_messages or save_messages or FLAGS.report_on_complexity:
                 # Store batch data to analyze
                 if correct_indices_com[_i]:
                     correct_to_analyze = add_data_point(batch, _i, correct_to_analyze, feats_1, feats_2, probs_1, probs_2)
@@ -1324,6 +1352,12 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     if save_messages:
         debuglogger.info(f'Saving messages...')
         save_messages_and_stats(correct_to_analyze, incorrect_to_analyze, agent_tag)
+    if FLAGS.report_on_complexity:
+        debuglogger.info(f'Reporting on message complexity')
+        print(correct_to_analyze['msg_1'])
+        print(correct_to_analyze['msg_1_ent'])
+        print(correct_to_analyze['msg_1_str'])
+        sys.exit()
 
     # Print confusion matrix
     true_labels = np.concatenate(true_labels).reshape(-1)
@@ -3236,6 +3270,7 @@ def flags():
     gflags.DEFINE_integer("log_dev", 1000, "")
     gflags.DEFINE_integer("log_self_com", 10000, "")
     gflags.DEFINE_integer("log_community_eval", 10000, "")
+    gflags.DEFINE_boolean("report_on_complexity", False, "")
 
     # Data settings
     gflags.DEFINE_integer("wv_dim", 100, "Dimension of the word vectors")
