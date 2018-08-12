@@ -510,6 +510,9 @@ def _create_master_list(lists):
 
 def calculate_average_message(message_lists):
     master_list = _create_master_list(message_lists)
+    if len(master_list) == 0:
+        debuglogger.warn(f'EMPTY LIST')
+        return None
     master_list = torch.stack(master_list)
     avg_msg = master_list.mean(dim=0)
     print(f'master list: {master_list.shape}, avg_msg: {avg_msg.numpy()}')
@@ -518,6 +521,9 @@ def calculate_average_message(message_lists):
 
 def calculate_average_entropy(entropy_lists):
     master_list = _create_master_list(entropy_lists)
+    if len(master_list) == 0:
+        debuglogger.warn(f'EMPTY LIST')
+        return None
     avg_ent = sum(master_list) / len(master_list)
     print(f'master list: {len(master_list)}, avg_ent: {avg_ent}')
     return avg_ent

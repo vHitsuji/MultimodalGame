@@ -1357,7 +1357,7 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
         # Calc overall stats
         avg_msg = calculate_average_message([correct_to_analyze['msg_1'], incorrect_to_analyze['msg_1'], correct_to_analyze['msg_2'], incorrect_to_analyze['msg_2']])
         avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent'], incorrect_to_analyze['msg_1_ent'], correct_to_analyze['msg_2_ent'], incorrect_to_analyze['msg_2_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         print(f'Entropy of average message: {ent_avg_msg}')
         t, d = count_distinct_messages([correct_to_analyze['msg_1_str'], incorrect_to_analyze['msg_1_str'], correct_to_analyze['msg_2_str'], incorrect_to_analyze['msg_2_str']])
         print(f'Total messages: {t}, Num distinct messages: {d}')
@@ -1365,49 +1365,49 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
         # Correct answers only
         avg_msg = calculate_average_message([correct_to_analyze['msg_1'], correct_to_analyze['msg_2']])
         avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent'], correct_to_analyze['msg_2_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([correct_to_analyze['msg_1_str'], correct_to_analyze['msg_2_str']])
         complexity_stats['correct'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
         # Incorrect answers only
         avg_msg = calculate_average_message([incorrect_to_analyze['msg_1'], incorrect_to_analyze['msg_2']])
         avg_ent = calculate_average_entropy([incorrect_to_analyze['msg_1_ent'], incorrect_to_analyze['msg_2_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([incorrect_to_analyze['msg_1_str'], incorrect_to_analyze['msg_2_str']])
         complexity_stats['incorrect'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
         # Agent 1 total
         avg_msg = calculate_average_message([correct_to_analyze['msg_1'], incorrect_to_analyze['msg_1']])
         avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent'], incorrect_to_analyze['msg_1_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([correct_to_analyze['msg_1_str'], incorrect_to_analyze['msg_1_str']])
         complexity_stats['a1_total'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
         # Agent 1 correct
         avg_msg = calculate_average_message([correct_to_analyze['msg_1']])
         avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([correct_to_analyze['msg_1_str']])
         complexity_stats['a1_correct'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
         # Agent 1 incorrect
         avg_msg = calculate_average_message([incorrect_to_analyze['msg_1']])
         avg_ent = calculate_average_entropy([incorrect_to_analyze['msg_1_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([incorrect_to_analyze['msg_1_str']])
         complexity_stats['a1_incorrect'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
         # Agent 2 total
         avg_msg = calculate_average_message([correct_to_analyze['msg_2'], incorrect_to_analyze['msg_2']])
         avg_ent = calculate_average_entropy([correct_to_analyze['msg_2_ent'], incorrect_to_analyze['msg_2_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([correct_to_analyze['msg_2_str'], incorrect_to_analyze['msg_2_str']])
         complexity_stats['a2_total'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
         # Agent 2 correct
         avg_msg = calculate_average_message([correct_to_analyze['msg_2']])
         avg_ent = calculate_average_entropy([correct_to_analyze['msg_2_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([correct_to_analyze['msg_2_str']])
         complexity_stats['a2_correct'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
         # Agent 2 incorrect
         avg_msg = calculate_average_message([incorrect_to_analyze['msg_2']])
         avg_ent = calculate_average_entropy([incorrect_to_analyze['msg_2_ent']])
-        ent_avg_msg = calculate_entropy(avg_msg)
+        ent_avg_msg = None if avg_msg is None else calculate_entropy(avg_msg)
         t, d = count_distinct_messages([incorrect_to_analyze['msg_2_str']])
         complexity_stats['a2_incorrect'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
 
