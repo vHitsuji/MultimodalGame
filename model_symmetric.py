@@ -30,7 +30,9 @@ from dataset_loader import load_shapeworld_dataset
 from community_util import sample_agents, build_train_matrix, build_eval_list, get_msg_pairs
 
 from misc import build_mask
-from misc import calculate_entropy
+from misc import calculate_average_message
+from misc import calculate_entropy, calculate_average_entropy, check_entropy
+from misc import count_distinct_messages
 from misc import read_log_load
 from misc import recursively_set_device, torch_save, torch_load, torch_load_communities
 from misc import FileLogger
@@ -340,17 +342,13 @@ def add_data_point(batch, i, data_store, messages_1, messages_2, probs_1, probs_
     p_1 = []  # message probability
     m_1_ent = []  # entropy per message
     m_1_str = []  # message as a string
-    # TODO CHECK zip
     for exchange, prob in zip(messages_1, probs_1):
-        print(f'exchange: {exchange}, prob: {prob}')
         m = exchange[i].data.cpu()
         p = prob[i].data.cpu()
         m_1.append(m)
         p_1.append(p)
         m_1_ent.append(calculate_entropy(p))
         m_1_str.append(convert_tensor_to_string(m))
-        print(f'message data: {m_1}, {p_1}, {m_1_ent}, {m_1_str}')
-        sys.exit()
     data_store["msg_1"].append(m_1)
     data_store["probs_1"].append(p_1)
     data_store["msg_1_str"].append(m_1_str)
@@ -1279,7 +1277,8 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
                     shapes_colors_accuracy[sc]["correct"] += 1
             # Time consuming, so only do this if necessary
             if store_examples or analyze_messages or save_messages or FLAGS.report_on_complexity:
-                debuglogger.info("Storing message data to analyze later...")
+                if _batch_counter == 1 and _i == 0:
+                    debuglogger.info("Storing message data to analyze later...")
                 if correct_indices_com[_i]:
                     correct_to_analyze = add_data_point(batch, _i, correct_to_analyze, feats_1, feats_2, probs_1, probs_2)
                 else:
@@ -1352,12 +1351,66 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     if save_messages:
         debuglogger.info(f'Saving messages...')
         save_messages_and_stats(correct_to_analyze, incorrect_to_analyze, agent_tag)
+    complexity_stats = {}
     if FLAGS.report_on_complexity:
         debuglogger.info(f'Reporting on message complexity')
-        print(correct_to_analyze['msg_1'])
-        print(correct_to_analyze['msg_1_ent'])
-        print(correct_to_analyze['msg_1_str'])
-        sys.exit()
+        # Calc overall stats
+        avg_msg = calculate_average_message([correct_to_analyze['msg_1'], incorrect_to_analyze['msg_1'], correct_to_analyze['msg_2'], incorrect_to_analyze['msg_2']])
+        avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent'], incorrect_to_analyze['msg_1_ent'], correct_to_analyze['msg_2_ent'], incorrect_to_analyze['msg_2_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        print(f'Entropy of average message: {ent_avg_msg}')
+        t, d = count_distinct_messages([correct_to_analyze['msg_1_str'], incorrect_to_analyze['msg_1_str'], correct_to_analyze['msg_2_str'], incorrect_to_analyze['msg_2_str']])
+        print(f'Total messages: {t}, Num distinct messages: {d}')
+        complexity_stats['total'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Correct answers only
+        avg_msg = calculate_average_message([correct_to_analyze['msg_1'], correct_to_analyze['msg_2']])
+        avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent'], correct_to_analyze['msg_2_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([correct_to_analyze['msg_1_str'], correct_to_analyze['msg_2_str']])
+        complexity_stats['correct'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Incorrect answers only
+        avg_msg = calculate_average_message([incorrect_to_analyze['msg_1'], incorrect_to_analyze['msg_2']])
+        avg_ent = calculate_average_entropy([incorrect_to_analyze['msg_1_ent'], incorrect_to_analyze['msg_2_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([incorrect_to_analyze['msg_1_str'], incorrect_to_analyze['msg_2_str']])
+        complexity_stats['incorrect'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Agent 1 total
+        avg_msg = calculate_average_message([correct_to_analyze['msg_1'], incorrect_to_analyze['msg_1']])
+        avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent'], incorrect_to_analyze['msg_1_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([correct_to_analyze['msg_1_str'], incorrect_to_analyze['msg_1_str']])
+        complexity_stats['a1_total'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Agent 1 correct
+        avg_msg = calculate_average_message([correct_to_analyze['msg_1']])
+        avg_ent = calculate_average_entropy([correct_to_analyze['msg_1_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([correct_to_analyze['msg_1_str']])
+        complexity_stats['a1_correct'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Agent 1 incorrect
+        avg_msg = calculate_average_message([incorrect_to_analyze['msg_1']])
+        avg_ent = calculate_average_entropy([incorrect_to_analyze['msg_1_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([incorrect_to_analyze['msg_1_str']])
+        complexity_stats['a1_incorrect'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Agent 2 total
+        avg_msg = calculate_average_message([correct_to_analyze['msg_2'], incorrect_to_analyze['msg_2']])
+        avg_ent = calculate_average_entropy([correct_to_analyze['msg_2_ent'], incorrect_to_analyze['msg_2_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([correct_to_analyze['msg_2_str'], incorrect_to_analyze['msg_2_str']])
+        complexity_stats['a2_total'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Agent 2 correct
+        avg_msg = calculate_average_message([correct_to_analyze['msg_2']])
+        avg_ent = calculate_average_entropy([correct_to_analyze['msg_2_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([correct_to_analyze['msg_2_str']])
+        complexity_stats['a2_correct'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        # Agent 2 incorrect
+        avg_msg = calculate_average_message([incorrect_to_analyze['msg_2']])
+        avg_ent = calculate_average_entropy([incorrect_to_analyze['msg_2_ent']]) 
+        ent_avg_msg = calculate_entropy(avg_msg)
+        t, d = count_distinct_messages([incorrect_to_analyze['msg_2_str']])
+        complexity_stats['a2_incorrect'] = {'avg_ent': avg_ent, 'ent_avg_msg': ent_avg_msg, 'num_msg': t, 'distinct_msg': d}
+        
 
     # Print confusion matrix
     true_labels = np.concatenate(true_labels).reshape(-1)
@@ -1392,6 +1445,7 @@ def eval_dev(dataset_path, top_k, agent1, agent2, logger, flogger, epoch, step, 
     extra['agent1_performance'] = agent1_performance
     extra['agent2_performance'] = agent2_performance
     extra['test_language_similarity'] = test_language_similarity
+    extra['complexity_stats'] = complexity_stats
 
     debuglogger.info(f'Eval total size: {total}')
     debuglogger.info(f'Eval total correct com: {total_correct_com}')
@@ -1587,7 +1641,16 @@ def get_and_log_dev_performance(agent1, agent2, dataset_path, in_domain_eval, de
     if ood_total > 0:
         flogger.Log('{}: {}: total: {}, correct: {}, accuracy: {}'.format(
                     domain, 'TOTAL SHAPES_COLORS out of domain', ood_total, ood_correct, ood_correct / ood_total))
-
+    if FLAGS.report_on_complexity:
+        flogger.Log(f'{domain}: complexity report: total: avg ent: {extra["complexity_stats"]["total"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["total"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["total"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["total"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: correct: avg ent: {extra["complexity_stats"]["correct"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["correct"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["correct"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["correct"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: incorrect: avg ent: {extra["complexity_stats"]["incorrect"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["incorrect"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["incorrect"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["incorrect"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: a1_total: avg ent: {extra["complexity_stats"]["a1_total"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["a1_total"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["a1_total"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["a1_total"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: a1_correct: avg ent: {extra["complexity_stats"]["a1_correct"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["a1_correct"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["a1_correct"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["a1_correct"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: a1_incorrect: avg ent: {extra["complexity_stats"]["a1_incorrect"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["a1_incorrect"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["a1_incorrect"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["a1_incorrect"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: a2_total: avg ent: {extra["complexity_stats"]["a2_total"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["a2_total"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["a2_total"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["a2_total"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: a2_correct: avg ent: {extra["complexity_stats"]["a2_correct"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["a2_correct"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["a2_correct"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["a2_correct"]["distinct_msg"]}')
+        flogger.Log(f'{domain}: complexity report: a2_incorrect: avg ent: {extra["complexity_stats"]["a2_incorrect"]["avg_ent"]}, ent_avg_msg: {extra["complexity_stats"]["a2_incorrect"]["ent_avg_msg"]}, num_msgs: {extra["complexity_stats"]["a2_incorrect"]["num_msg"]}, distinct msg: {extra["complexity_stats"]["a2_incorrect"]["distinct_msg"]}')
     if agent_dicts is not None:
         flogger.Log('Test language similarity performance')
         comp_dict = {}

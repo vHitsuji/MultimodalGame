@@ -473,11 +473,60 @@ def log2(p):
     return torch.log(p) / torch.log(torch.zeros(1).fill_(2))
 
 
+def check_entropy():
+    '''Checksthe entropy of a number of 8-d binary variables'''
+    p = torch.zeros(8)
+    print(f'Entropy of {p} is {calculate_entropy(p)}')
+    p = torch.ones(8)
+    print(f'Entropy of {p} is {calculate_entropy(p)}')
+    p = torch.zeros(8).fill_(0.5)
+    print(f'Entropy of {p} is {calculate_entropy(p)}')
+    p = torch.zeros(8).fill_(0.2)
+    print(f'Entropy of {p} is {calculate_entropy(p)}')
+    p = torch.zeros(8).fill_(0.5)
+    p[0] = 0.2
+    p[1] = 0.2
+    print(f'Entropy of {p} is {calculate_entropy(p)}')
+
+
 def calculate_entropy(p):
     ''' Calculates the entropy of an n-dimensional binary variable'''
-    H = - (log2(p) * p).sum() - (log2(1 - p) * (1 - p)).sum()
+    H = - (log2(p + 1e-8) * p).sum() - (log2(1 - p + 1e-8) * (1 - p)).sum()
+    #H = - (log2(p) * p).sum() - (log2(1 - p) * (1 - p)).sum()
     if np.isnan(H):
         debuglogger.warn(f'NAN entropy for {p}')
-        return None
+        return torch.zeros(1)
     else:
         return H
+
+
+def _create_master_list(lists):
+    master_list = []
+    for l in lists:
+        for k in l:
+            master_list.extend(k)
+    return master_list
+
+
+def calculate_average_message(message_lists):
+    master_list = _create_master_list(message_lists)
+    master_list = torch.stack(master_list)
+    avg_msg = master_list.mean(dim=0)
+    print(f'master list: {master_list.shape}, avg_msg: {avg_msg.numpy()}')
+    return avg_msg
+
+
+def calculate_average_entropy(entropy_lists):
+    master_list = _create_master_list(entropy_lists)
+    avg_ent = sum(master_list) / len(master_list)
+    print(f'master list: {len(master_list)}, avg_ent: {avg_ent}')
+    return avg_ent
+
+
+def count_distinct_messages(message_lists):
+    master_list = _create_master_list(message_lists)
+    total_msgs = len(master_list)
+    master_list = list(set(master_list))
+    distinct_msgs = len(master_list)
+    return total_msgs, distinct_msgs
+    
