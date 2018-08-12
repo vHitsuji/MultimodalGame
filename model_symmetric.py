@@ -3171,50 +3171,49 @@ def run():
 
             # Every FLAGS.check_accuracy_interval steps check if the agents have reached an average accuracy of 75%
             # If yes, then saved a version
-            if FLAGS.agent_pools or FLAGS.agent_communities:
-                if step > 0 and (step % FLAGS.check_accuracy_interval == 0):
-                    # Only check the first 8 x 8 agents max - otherwise too time consuming
-                    _agent_accuracy = []
-                    for i in range(min(FLAGS.num_agents, 8)):
-                        for j in range(min(FLAGS.num_agents, 8)):
-                            _agent1 = models_dict["agent" + str(i + 1)]
-                            if i == j:
-                                # Create a copy of agents playing with themselves to avoid sharing the hidden state
-                                _agent2 = Agent(im_feature_type=FLAGS.img_feat,
-                                                im_feat_dim=FLAGS.img_feat_dim,
-                                                h_dim=FLAGS.h_dim,
-                                                m_dim=FLAGS.m_dim,
-                                                desc_dim=FLAGS.desc_dim,
-                                                num_classes=FLAGS.num_classes,
-                                                s_dim=FLAGS.s_dim,
-                                                use_binary=FLAGS.use_binary,
-                                                use_attn=FLAGS.visual_attn,
-                                                attn_dim=FLAGS.attn_dim,
-                                                use_MLP=FLAGS.use_MLP,
-                                                cuda=FLAGS.cuda,
-                                                im_from_scratch=FLAGS.improc_from_scratch,
-                                                dropout=FLAGS.dropout)
-                                _agent2.load_state_dict(agent1.state_dict())
-                                if FLAGS.cuda:
-                                    _agent2.cuda()
-                            else:
-                                _agent2 = models_dict["agent" + str(j + 1)]
-                            dev_accuracy_id_pairs[i], total_accuracy_com = get_and_log_dev_performance(
-                                _agent1, _agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id_pairs[i], logger, flogger, f'Average Check: In Domain: Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'A_{i + 1}_{j + 1}')
-                            _agent_accuracy.append(total_accuracy_com)
-                    if FLAGS.num_agents == 2:
-                        _avg_accuracy = np.mean([_agent_accuracy[1], _agent_accuracy[3]])
-                    else:
-                        _avg_accuracy = np.mean(_agent_accuracy)
-                    flogger.Log(f"Step {step}: Average accuracy: {_avg_accuracy}, Individual accuracies: {_agent_accuracy}")
-                    if _avg_accuracy > 0.75:
-                        flogger.Log(f"Checkpointing a model with {_avg_accuracy} average accuracy at {step} steps")
-                        # Optionally store additional information
-                        data = dict(step=step, best_dev_acc=best_dev_acc)
-                        torch_save(FLAGS.checkpoint + "_{0:.4f}".format(_avg_accuracy), data, models_dict,
-                                   optimizers_dict, gpu=0 if FLAGS.cuda else -1)
-                        flogger.Log(f"Accuracy reached at least 75% on average, stopping training at step {step}...")
-                        sys.exit()
+            if step > 0 and (step % FLAGS.check_accuracy_interval == 0):
+                # Only check the first 8 x 8 agents max - otherwise too time consuming
+                _agent_accuracy = []
+                for i in range(min(FLAGS.num_agents, 8)):
+                    for j in range(min(FLAGS.num_agents, 8)):
+                        _agent1 = models_dict["agent" + str(i + 1)]
+                        if i == j:
+                            # Create a copy of agents playing with themselves to avoid sharing the hidden state
+                            _agent2 = Agent(im_feature_type=FLAGS.img_feat,
+                                            im_feat_dim=FLAGS.img_feat_dim,
+                                            h_dim=FLAGS.h_dim,
+                                            m_dim=FLAGS.m_dim,
+                                            desc_dim=FLAGS.desc_dim,
+                                            num_classes=FLAGS.num_classes,
+                                            s_dim=FLAGS.s_dim,
+                                            use_binary=FLAGS.use_binary,
+                                            use_attn=FLAGS.visual_attn,
+                                            attn_dim=FLAGS.attn_dim,
+                                            use_MLP=FLAGS.use_MLP,
+                                            cuda=FLAGS.cuda,
+                                            im_from_scratch=FLAGS.improc_from_scratch,
+                                            dropout=FLAGS.dropout)
+                            _agent2.load_state_dict(agent1.state_dict())
+                            if FLAGS.cuda:
+                                _agent2.cuda()
+                        else:
+                            _agent2 = models_dict["agent" + str(j + 1)]
+                        dev_accuracy_id_pairs[i], total_accuracy_com = get_and_log_dev_performance(
+                            _agent1, _agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id_pairs[i], logger, flogger, f'Average Check: In Domain: Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'A_{i + 1}_{j + 1}')
+                        _agent_accuracy.append(total_accuracy_com)
+                if FLAGS.num_agents == 2:
+                    _avg_accuracy = np.mean([_agent_accuracy[1], _agent_accuracy[3]])
+                else:
+                    _avg_accuracy = np.mean(_agent_accuracy)
+                flogger.Log(f"Step {step}: Average accuracy: {_avg_accuracy}, Individual accuracies: {_agent_accuracy}")
+                if _avg_accuracy > 0.75:
+                    flogger.Log(f"Checkpointing a model with {_avg_accuracy} average accuracy at {step} steps")
+                    # Optionally store additional information
+                    data = dict(step=step, best_dev_acc=best_dev_acc)
+                    torch_save(FLAGS.checkpoint + "_{0:.4f}".format(_avg_accuracy), data, models_dict,
+                               optimizers_dict, gpu=0 if FLAGS.cuda else -1)
+                    flogger.Log(f"Accuracy reached at least 75% on average, stopping training at step {step}...")
+                    sys.exit()
 
             # Save model periodically (overwrites most recent)
             if step >= FLAGS.save_after and step % FLAGS.save_interval == 0:
