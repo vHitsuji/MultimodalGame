@@ -3176,6 +3176,7 @@ def run():
                 _agent_accuracy = []
                 for i in range(min(FLAGS.num_agents, 8)):
                     for j in range(min(FLAGS.num_agents, 8)):
+                        debuglogger.info(f"Accuracy check i:{i} j:{j}")
                         _agent1 = models_dict["agent" + str(i + 1)]
                         if i == j:
                             # Create a copy of agents playing with themselves to avoid sharing the hidden state
@@ -3202,7 +3203,7 @@ def run():
                             _agent1, _agent2, FLAGS.dataset_indomain_valid_path, True, dev_accuracy_id_pairs[i], logger, flogger, f'Average Check: In Domain: Agents {i + 1},{j + 1}', epoch, step, i_batch, store_examples=False, analyze_messages=False, save_messages=False, agent_tag=f'A_{i + 1}_{j + 1}')
                         _agent_accuracy.append(total_accuracy_com)
                 if FLAGS.num_agents == 2:
-                    _avg_accuracy = np.mean([_agent_accuracy[1], _agent_accuracy[3]])
+                    _avg_accuracy = np.mean([_agent_accuracy[1], _agent_accuracy[2]])
                 else:
                     _avg_accuracy = np.mean(_agent_accuracy)
                 flogger.Log(f"Step {step}: Average accuracy: {_avg_accuracy}, Individual accuracies: {_agent_accuracy}")
