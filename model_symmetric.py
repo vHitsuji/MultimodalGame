@@ -2362,9 +2362,21 @@ def run():
         best_dev_acc = data['best_dev_acc']
         if FLAGS.agent_communities:
             # Load train and eval matrices
-            train_vec_prob = pickle.load(open(FLAGS.checkpoint + '_train_vec.pkl', 'rb'))
-            agent_idx_list = pickle.load(open(FLAGS.checkpoint + '_agent_idx_list.pkl', 'rb'))
-            eval_agent_list = pickle.load(open(FLAGS.checkpoint + '_eval_agent_list.pkl', 'rb'))
+            flogger.Log(f"Train and eval matrices for {FLAGS.checkpoint} exists?: {os.path.isfile(FLAGS.checkpoint + '_train_vec.pkl')}")
+            if os.path.isfile(FLAGS.checkpoint + '_train_vec.pkl'):
+                train_vec_prob = pickle.load(open(FLAGS.checkpoint + '_train_vec.pkl', 'rb'))
+                agent_idx_list = pickle.load(open(FLAGS.checkpoint + '_agent_idx_list.pkl', 'rb'))
+                eval_agent_list = pickle.load(open(FLAGS.checkpoint + '_eval_agent_list.pkl', 'rb'))
+            else:
+                # Try just .pt suffix. Used when evaluating checkpoints saved after xx steps e.g. .pt_50000
+                # Or for the best checkpoint, .pt_best.
+                # During normal training the train and eval matrices are only associated with .pt suffix
+                stripped_checkpoint = FLAGS.checkpoint.split("pt_")[0] + 'pt'
+                flogger.Log("Loading train and eval matrices from: " + FLAGS.checkpoint + " failed")
+                flogger.Log("Trying " + stripped_checkpoint)
+                train_vec_prob = pickle.load(open(stripped_checkpoint + '_train_vec.pkl', 'rb'))
+                agent_idx_list = pickle.load(open(stripped_checkpoint + '_agent_idx_list.pkl', 'rb'))
+                eval_agent_list = pickle.load(open(stripped_checkpoint + '_eval_agent_list.pkl', 'rb'))
             flogger.Log(f'Train matrix: {torch.from_numpy(np.reshape(train_vec_prob, (FLAGS.num_agents, FLAGS.num_agents)))}')
             flogger.Log(f'Eval agent list: {eval_agent_list}')
     elif FLAGS.agent_communities:
