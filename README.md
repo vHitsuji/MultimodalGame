@@ -382,7 +382,11 @@ python model_symmetric.py
 
 These files extract different types of tracked data from either the training or eval log files. See the comments in the bash scripts for usage and more details.
 
-- `./logs/analyze_xproduct.sh`: outputs a 2d table of the in domain accuracy for all pairs of agents
+- `./logs/analyze_xproduct.sh`: outputs a 2d table for all pairs of agents of:
+  1. the in domain accuracy
+  2. E[H(m|x)]
+  3. H(E[m|x])
+  4. Number of distinct messages
 - `./logs/analyze_communities.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a community containing 2 pools.
 - `./logs/analyze_communities_chain_3.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 3 pools.
 - `./logs/analyze_communities_chain_4.sh`: outputs a table containing the in domain accuracy for all tracked pairs of agents for a chain community containing 4 pools.

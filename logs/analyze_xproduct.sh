@@ -1,5 +1,10 @@
 #!/bin/bash
-# Outputs a 2d table containing the in domain accuracy for all possible pairs of agents
+# Outputs a 2d table for all pairs of agents of:
+#  1. the in domain accuracy
+#  2. E[H(m|x)]
+#  3. H(E[m|x])
+#  4. Number of distinct messages
+
 file="$1.log"
 output="$1_xproduct"
 num=$[$2+1]
@@ -60,13 +65,13 @@ rm temp.txt
 
 echo
 echo "Calculating number of distinct messages"
-cat $file | grep "In Domain Agents 1,[0-9][0-9]*: complexity report: total:" | sed 's/.*Agents [0-9][0-9]*,//g' | sed 's/\([0-9][0-9]*\).*distinct msg: \([0-9][0-9]]*\)/\1,\2/g' > "${output}_entavgmsg.csv"
+cat $file | grep "In Domain Agents 1,[0-9][0-9]*: complexity report: total:" | sed 's/.*Agents [0-9][0-9]*,//g' | sed 's/\([0-9][0-9]*\).*distinct msg: \([0-9][0-9]]*\)/\1, \2/g' > "${output}_entavgmsg.csv"
 # cat "${output}_entavgmsg.csv"
 
 anum=2
 while [ $anum -lt $num ]
 do
-  cat $file | grep "In Domain Agents $anum,[0-9][0-9]*: complexity report: total:" | sed 's/.*Agents [0-9][0-9]*,//g' | sed 's/\([0-9][0-9]*\).*distinct msg: \([0-9][0-9]]*\)/\1,\2/g' > temp.txt
+  cat $file | grep "In Domain Agents $anum,[0-9][0-9]*: complexity report: total:" | sed 's/.*Agents [0-9][0-9]*,//g' | sed 's/\([0-9][0-9]*\).*distinct msg: \([0-9][0-9]]*\)/\1, \2/g' > temp.txt
   join -t , "${output}_entavgmsg.csv" temp.txt > tmp && mv tmp "${output}_entavgmsg.csv"
   anum=$[$anum+1]
   # cat temp.txt
