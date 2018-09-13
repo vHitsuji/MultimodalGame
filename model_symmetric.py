@@ -2429,7 +2429,7 @@ def run():
 
     # Alternatives to training.
     if FLAGS.eval_only:
-        if (not os.path.exists(FLAGS.checkpoint)) and (FLAGS.community_checkpoints[0] is None):
+        if not os.path.exists(FLAGS.checkpoint):
             raise Exception("Must provide valid checkpoint.")
 
         debuglogger.info("Evaluating on validation set")
@@ -3219,7 +3219,7 @@ def run():
                 else:
                     _avg_accuracy = np.mean(_agent_accuracy)
                 flogger.Log(f"Step {step}: Average accuracy: {_avg_accuracy}, Individual accuracies: {_agent_accuracy}")
-                if _avg_accuracy > 0.75:
+                if _avg_accuracy > 0.80:
                     flogger.Log(f"Checkpointing a model with {_avg_accuracy} average accuracy at {step} steps")
                     # Optionally store additional information
                     data = dict(step=step, best_dev_acc=best_dev_acc)
