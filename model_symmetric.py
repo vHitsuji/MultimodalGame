@@ -42,6 +42,8 @@ from misc import xavier_normal
 import gflags
 FLAGS = gflags.FLAGS
 
+sys.setrecursionlimit(3000)
+
 SHAPES = ['circle', 'cross', 'ellipse', 'pentagon', 'rectangle', 'semicircle', 'square', 'triangle']
 COLORS = ['blue', 'cyan', 'gray', 'green', 'magenta', 'red', 'yellow']
 OOD_EXAMPLES = ['square_red', 'triangle_green', 'circle_blue', 'rectangle_yellow', 'cross_magenta', 'ellipse_cyan']
